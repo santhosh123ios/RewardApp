@@ -40,16 +40,24 @@ export default function LoginScreen() {
             if (response.ok) {
         
             console.log('Login successful:', data);
-            const token = data.result.token;
-            const user_type = data.result.data.user_type; //If 2 or 3 access the login
-            // Save token
-            await AsyncStorage.setItem('auth_token', token);
+            const token = data?.result?.token;
+            const user_type = data?.result?.data?.user_type; //If 2 or 3 access the login
+
+            
+            
             if (user_type === 2 || user_type === 3 )
             {
+              await AsyncStorage.setItem('auth_token', token);
               await AsyncStorage.setItem('isLoggedIn', 'true');
-              
-                navigation.navigate('Home');
-                ///Alert.alert('Success', 'Logged in successfully!'+user_type);
+              navigation.navigate('App');
+              Alert.alert('Success', 'Logged in successfully!'+user_type);
+              // Save token
+              // await AsyncStorage.setItem('auth_token', token);
+              // await AsyncStorage.setItem('isLoggedIn', 'true');
+              // //navigation.replace('Main'); // replaces Login with Main
+              // navigation.navigate('Main');
+              // ///Alert.alert('Success', 'Logged in successfully!'+user_type);
+
             }
             else
             {
