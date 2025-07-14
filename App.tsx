@@ -12,6 +12,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext, AuthProvider } from './src/context/AuthContext';
 import Main from './src/screens/Main';
 import LoginScreen from './src/screens/LoginScreen';
+import OfferDetailsScreen from './src/screens/OfferDetailsScreen';
 
 function AppContent() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -35,6 +36,7 @@ function AppContent() {
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
+        <Stack.Screen name="OfferDetails" component={OfferDetailsScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

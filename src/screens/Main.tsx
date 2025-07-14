@@ -5,7 +5,6 @@ import HomeScreen from './HomeScreen';
 import LeadsScreen from './LeadsScreen';
 import WalletScreen from './WalletScreen';
 import ProfileScreen from './ProfileScreen';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -36,6 +35,7 @@ export default function Main() {
         <Tab.Screen name="Leads" component={LeadsScreen} />
         <Tab.Screen name="Wallet" component={WalletScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
+        
         </Tab.Navigator>
   );
 }

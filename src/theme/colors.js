@@ -5,6 +5,7 @@ const colors = {
   white: '#ffffff',
   text: '#9A9993',
   label: '#222222',
+  slelectedLabel: '#ffffffff',
   inputBorder: '#cccccc',
   link: '#007bff',
   red: '#D50000',
