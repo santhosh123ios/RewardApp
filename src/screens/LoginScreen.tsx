@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState,useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import globalStyles from '../theme/globalStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BallIndicator } from 'react-native-indicators';
-import { useNavigation } from '@react-navigation/native';
+import { AuthContext } from '../context/AuthContext';
 
 
 export default function LoginScreen() {
 
-   const navigation = useNavigation();
+   //const navigation = useNavigation();
 
+    const { setLoggedIn } = useContext(AuthContext);
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -49,13 +50,7 @@ export default function LoginScreen() {
             {
               await AsyncStorage.setItem('auth_token', token);
               await AsyncStorage.setItem('isLoggedIn', 'true');
-              navigation.navigate('App');
-              Alert.alert('Success', 'Logged in successfully!'+user_type);
-              // Save token
-              // await AsyncStorage.setItem('auth_token', token);
-              // await AsyncStorage.setItem('isLoggedIn', 'true');
-              // //navigation.replace('Main'); // replaces Login with Main
-              // navigation.navigate('Main');
+              setLoggedIn(true);
               // ///Alert.alert('Success', 'Logged in successfully!'+user_type);
 
             }
@@ -104,43 +99,24 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* <TouchableOpacity
-            style={[
-                globalStyles.button,
-                (!isValid || loading) && { backgroundColor: '#ccc' },
-            ]}
-            disabled={!isValid || loading}
-            onPress={login}
-            >
-            {true ? (
-                <ActivityIndicator
-                  color="#f8d307"
-                  size="large" // or "large"
-                  style={{ marginVertical: 4 }} // customize as needed
-                />
-            ) : (
-                <Text style={globalStyles.buttonText}>Log In</Text>
-            )}
-       </TouchableOpacity> */}
-
-       <TouchableOpacity
-  style={[
-    globalStyles.button,
-    (!isValid || loading) && { backgroundColor: '#ccc' },
-  ]}
-  disabled={!isValid || loading}
-  onPress={login}
->
-  {loading ? (
-    <BallIndicator
-      size={25}
-      color="#f8d307"
-      style={{ alignSelf: 'center' }}
-    />
-  ) : (
-    <Text style={globalStyles.buttonText}>Log In</Text>
-  )}
-</TouchableOpacity>
+      <TouchableOpacity
+          style={[
+            globalStyles.button,
+            (!isValid || loading) && { backgroundColor: '#ccc' },
+          ]}
+          disabled={!isValid || loading}
+          onPress={login}
+        >
+          {loading ? (
+            <BallIndicator
+              size={25}
+              color="#f8d307"
+              style={{ alignSelf: 'center' }}
+            />
+          ) : (
+            <Text style={globalStyles.buttonText}>Log In</Text>
+          )}
+      </TouchableOpacity>
 
       <TouchableOpacity>
         <Text style={globalStyles.link}>Forgot Password?</Text>
@@ -153,6 +129,6 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// const styles = StyleSheet.create({
   
-});
+// });
