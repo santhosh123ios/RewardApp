@@ -13,6 +13,7 @@ import { AuthContext, AuthProvider } from './src/context/AuthContext';
 import Main from './src/screens/Main';
 import LoginScreen from './src/screens/LoginScreen';
 import OfferDetailsScreen from './src/screens/OfferDetailsScreen';
+import ProductdetailsScreen from './src/screens/Home/ProductdetailsScreen';
 
 function AppContent() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -37,6 +38,8 @@ function AppContent() {
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
         <Stack.Screen name="OfferDetails" component={OfferDetailsScreen}/>
+        <Stack.Screen name="ProductDetails" component={ProductdetailsScreen}/>
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

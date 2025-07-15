@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import ApiService from '../services/ApiService';
 
 
 const windowWidth = Dimensions.get('window').width;
@@ -26,75 +27,29 @@ type OfferItem = {
   image: string;
 };
 
-const offerData = [
-  {
-    id: '1',
-    title: 'Summer Sale',
-    description: 'Up to 50% off on all items',
-    discount: '50%',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    id: '2',
-    title: 'Winter Deals',
-    description: 'Buy 1 Get 1 Free',
-    discount: 'BOGO',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    id: '1',
-    title: 'Summer Sale',
-    description: 'Up to 50% off on all items',
-    discount: '50%',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    id: '2',
-    title: 'Winter Deals',
-    description: 'Buy 1 Get 1 Free',
-    discount: 'BOGO',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    id: '1',
-    title: 'Summer Sale',
-    description: 'Up to 50% off on all items',
-    discount: '50%',
-    image: 'https://via.placeholder.com/150',
-  },
-  {
-    id: '2',
-    title: 'Winter Deals',
-    description: 'Buy 1 Get 1 Free',
-    discount: 'BOGO',
-    image: 'https://via.placeholder.com/150',
-  },
-  // Add more items...
-];
+type ProductItem = {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  offer_price: string;
+  image: string;
+};
 
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('Offers');
   const [offers, setOffers] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProd, setLoadingProd] = useState(true);
 
   const navigation = useNavigation();
   
 
   useEffect(() => {
     fetchOffers();
+    fetchProducts();
 }, []);
-
-// const fetchOffers = async () => {
-//   try {
-//     const response = await axios.get('https://crmgcc.net/api/member/get_all_offers');
-//     const { data } = response.data.result;
-//     setOffers(data);
-//   } catch (error) {
-//     console.error('Error fetching offers:', error);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
 
 const fetchOffers = async () => {
   try {
@@ -126,6 +81,23 @@ const fetchOffers = async () => {
   }
 };
 
+const fetchProducts = async () => {
+  setLoadingProd(true);
+  try {
+    const json = await ApiService('member/get_all_product');
+
+    if (json?.result?.status === 1) {
+      setProducts(json.result.data);
+    } else {
+      console.warn('Failed to fetch offers');
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+  } finally {
+    setLoadingProd(false);
+  }
+};
+
 const renderCard = ({ item }: { item: OfferItem }) => (
   <TouchableOpacity
     onPress={() => navigation.navigate('OfferDetails', { offer: item })}
@@ -139,6 +111,26 @@ const renderCard = ({ item }: { item: OfferItem }) => (
     <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
     <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
     <Text style={styles.discount}>Discount: {item.discount}%</Text>
+  </TouchableOpacity>
+);
+
+const renderCardProduct = ({ item }: { item: ProductItem }) => (
+  <TouchableOpacity
+    onPress={() => navigation.navigate('ProductDetails', { product: item })}
+    style={styles.card}
+    activeOpacity={0.8}
+  >
+    <Image
+      source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
+      style={styles.image}
+    />
+    <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+    <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+    <View style={styles.priceView}>
+      <Text style={styles.priceLable}>Price: </Text>
+      <Text style={styles.offerPrice}>{item.offer_price}</Text>
+      <Text style={styles.price}>{item.price}</Text>
+    </View>
   </TouchableOpacity>
 );
 
@@ -178,9 +170,17 @@ const renderCard = ({ item }: { item: OfferItem }) => (
       )}
 
       {activeTab === 'Products' && (
-        <View style={styles.placeholder}>
-          <Text>Products tab coming soon...</Text>
-        </View>
+       loadingProd ? (
+          <ActivityIndicator size="large" color="#f8d307" />
+        ) : (
+          <FlatList
+            data={products}
+            renderItem={renderCardProduct}
+            keyExtractor={item => item.id.toString()}
+            numColumns={2}
+            contentContainerStyle={styles.grid}
+          />
+        )
       )}
     </SafeAreaView>
   );
@@ -264,6 +264,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: 'bold',
   },
+  priceView:
+  {
+    flexDirection: 'row',
+  },
+  priceLable:
+  {
+    fontSize: 12,
+    color: colors.label,
+    marginTop: 4,
+    fontWeight: 'bold',
+  },
+  offerPrice:
+  {
+    fontSize: 12,
+    color: colors.green,
+    marginTop: 4,
+    fontWeight: 'bold',
+  },
+  price:
+  {
+    fontSize: 12,
+    color: colors.text,
+    marginTop: 4,
+    fontWeight: 'bold',
+    marginLeft: 5,
+    textDecorationLine: 'line-through',
+  },
+
   placeholder: {
     flex: 1,
     justifyContent: 'center',
