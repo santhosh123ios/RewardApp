@@ -51,25 +51,42 @@ export default function HomeScreen() {
     fetchProducts();
 }, []);
 
+// const fetchOffers = async () => {
+//   try {
+//     const token = await AsyncStorage.getItem('auth_token'); // 👈 or your token key
+//     if (!token) {
+//       console.warn('No token found');
+//       return;
+//     }
+
+//     const response = await fetch('https://crmgcc.net/api/member/get_all_offers', {
+//       method: 'GET',
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'Authorization': `Bearer ${token}`, // ✅ Pass token here
+//       },
+//     });
+
+//     const json = await response.json();
+
+//     if (json.result && json.result.status === 1) {
+//       setOffers(json.result.data);
+//     } else {
+//       console.warn('Failed to fetch offers');
+//     }
+//   } catch (error) {
+//     console.error('Fetch error:', error);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 const fetchOffers = async () => {
+  setLoading(true);
   try {
-    const token = await AsyncStorage.getItem('auth_token'); // 👈 or your token key
-    if (!token) {
-      console.warn('No token found');
-      return;
-    }
+    const json = await ApiService('member/get_all_offers');
 
-    const response = await fetch('https://crmgcc.net/api/member/get_all_offers', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, // ✅ Pass token here
-      },
-    });
-
-    const json = await response.json();
-
-    if (json.result && json.result.status === 1) {
+    if (json?.result?.status === 1) {
       setOffers(json.result.data);
     } else {
       console.warn('Failed to fetch offers');
