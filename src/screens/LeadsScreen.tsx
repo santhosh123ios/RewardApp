@@ -3,6 +3,8 @@ import colors from "../theme/colors";
 import { useEffect, useState } from "react";
 import ApiService from "../services/ApiService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 
 interface Lead {
@@ -14,8 +16,19 @@ interface Lead {
   lead_status: string;
 }
 
+// Define the navigation type for the stack
+
+type RootStackParamList = {
+  Main: undefined;
+  Login: undefined;
+  OfferDetails: undefined;
+  ProductDetails: undefined;
+  CreateLead: undefined;
+};
+
 export default function LeadsScreen() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // Helper to format date
   function formatDate(dateString: string) {
@@ -99,8 +112,7 @@ export default function LeadsScreen() {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => {
-          // TODO: Navigate to lead create screen or open modal
-          console.log('Create Lead');
+          navigation.navigate('CreateLead');
         }}
       >
         <Text style={styles.fabText}>+</Text>

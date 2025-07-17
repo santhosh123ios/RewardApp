@@ -1,7 +1,11 @@
 // globalStyles.js
 
 import { StyleSheet } from 'react-native';
-import colors from './colors'; // import your global colors if you have them
+import colors from './colors'; // import your global colors if you have them 
+import { Dimensions } from 'react-native';
+
+const windowWidth = Dimensions.get('window').width; 
+
 
 const globalStyles = StyleSheet.create({
   container: {
@@ -73,6 +77,23 @@ const globalStyles = StyleSheet.create({
     flex: 1,
     height: '100%',
   },
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    },
+    
+    header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    },
+    headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign:'center',
+    width: windowWidth - 76
+    },
 });
 
 export default globalStyles;
