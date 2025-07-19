@@ -1,9 +1,10 @@
 // services/ApiService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const BASE_URL = 'https://crmgcc.net/api/';
 
-const ApiService = async (endpoint, method = 'GET', body = null) => {
+const ApiService = async (endpoint: string, method: string = 'GET', body: any = null) => {
   try {
     const token = await AsyncStorage.getItem('auth_token');
 
@@ -12,18 +13,22 @@ const ApiService = async (endpoint, method = 'GET', body = null) => {
       return null;
     }
 
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+    let headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`
     };
 
-    const options = {
+    // Only set Content-Type for non-FormData bodies
+    if (!(body && typeof body === 'object' && body.constructor && body.constructor.name === 'FormData')) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const options: any = {
       method,
       headers,
     };
 
     if (body && method !== 'GET') {
-      options.body = JSON.stringify(body);
+      options.body = (body && typeof body === 'object' && body.constructor && body.constructor.name === 'FormData') ? body : JSON.stringify(body);
     }
 
     const response = await fetch(BASE_URL + endpoint, options);
