@@ -6,6 +6,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
+import DocumentPicker from 'react-native-document-picker';
+import type { DocumentPickerResponse } from 'react-native-document-picker';
 
 const CreateLeadScreen = () => {
      const navigation = useNavigation();
@@ -13,7 +15,7 @@ const CreateLeadScreen = () => {
     const [selectedVendor, setSelectedVendor] = useState('');
     const [leadName, setLeadName] = useState('');
     const [description, setDescription] = useState('');
-    const [file, setFile] = useState(null);
+    const [file, setFile] = useState<DocumentPickerResponse | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -34,9 +36,19 @@ const CreateLeadScreen = () => {
         fetchVendors();
     }, []);
 
-    const handleFileAttach = () => {
-        // TODO: Implement file picker logic
-        Alert.alert('File picker not implemented');
+    const handleFileAttach = async () => {
+        try {
+            const res = await DocumentPicker.pickSingle({
+                type: DocumentPicker.types.allFiles,
+            });
+            setFile(res);
+        } catch (err: any) {
+            if (DocumentPicker.isCancel(err)) {
+                // User cancelled the picker
+            } else {
+                Alert.alert('File picker error', err.message || 'Unknown error');
+            }
+        }
     };
 
     const handleSubmit = async () => {
@@ -94,7 +106,7 @@ const CreateLeadScreen = () => {
                 <Text style={styles.label}>Attach File</Text>
                 <TouchableOpacity style={styles.attachButton} onPress={handleFileAttach}>
                     <Icon name="attach" size={20} color="#555" />
-                    <Text style={styles.attachButtonText}>{file ? 'File Attached' : 'Attach File'}</Text>
+                    <Text style={styles.attachButtonText}>{file ? file.name : 'Attach File'}</Text>
                 </TouchableOpacity>
                 {/* Submit Button */}
                 <TouchableOpacity
