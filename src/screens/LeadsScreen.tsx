@@ -17,14 +17,13 @@ interface Lead {
   lead_status: string;
 }
 
-// Define the navigation type for the stack
-
 type RootStackParamList = {
   Main: undefined;
   Login: undefined;
   OfferDetails: undefined;
   ProductDetails: undefined;
   CreateLead: undefined;
+  LeadDetails: { lead: Lead };
 };
 
 export default function LeadsScreen() {
@@ -69,32 +68,31 @@ export default function LeadsScreen() {
   };
 
   const renderItem = ({ item }: any) => (
-    <View style={styles.leadItem}>
-      <Image
-        source={
-          item.vendor_image
-            ? { uri: "https://crmgcc.net/uploads/" + item.vendor_image }
-            : require('../../assets/dummy.jpg')
-        }
-        style={styles.leadImage}
-      />
-      <View style={styles.leadInfo}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.leadTitle}>{item.lead_name}</Text>
-          
+    <TouchableOpacity onPress={() => navigation.navigate('LeadDetails', { lead: item })}>
+      <View style={styles.leadItem}>
+        <Image
+          source={
+            item.vendor_image
+              ? { uri: "https://crmgcc.net/uploads/" + item.vendor_image }
+              : require('../../assets/dummy.jpg')
+          }
+          style={styles.leadImage}
+        />
+        <View style={styles.leadInfo}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.leadTitle}>{item.lead_name}</Text>
+          </View>
+          <Text style={styles.leadDescription}>{item.lead_description}</Text>
+          <Text style={styles.leadDatetime}>{formatDate(item.created_at)}</Text>
         </View>
-        <Text style={styles.leadDescription}>{item.lead_description}</Text>
-        <Text style={styles.leadDatetime}>{formatDate(item.created_at)}</Text>
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          
-          <Text style={[styles.statusText, { color: statusMap[item.lead_status]?.color || 'gray' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[styles.statusText, { color: statusMap[item.lead_status]?.color || 'gray' }]}> 
             {statusMap[item.lead_status]?.text || 'UNKNOWN'}
           </Text>
           <View style={[styles.statusDot, { backgroundColor: statusMap[item.lead_status]?.color || 'gray' }]} />
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

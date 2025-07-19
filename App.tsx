@@ -15,6 +15,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import OfferDetailsScreen from './src/screens/OfferDetailsScreen';
 import ProductdetailsScreen from './src/screens/Home/ProductdetailsScreen';
 import CreateLeadScreen from './src/screens/Leads/CreateLeadScreen';
+import LeadDetailsScreen from './src/screens/Leads/LeadDetailsScreen';
 
 function AppContent() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -41,6 +42,7 @@ function AppContent() {
         <Stack.Screen name="OfferDetails" component={OfferDetailsScreen}/>
         <Stack.Screen name="ProductDetails" component={ProductdetailsScreen}/>
         <Stack.Screen name="CreateLead" component={CreateLeadScreen}/>
+        <Stack.Screen name="LeadDetails" component={LeadDetailsScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );
