@@ -5,6 +5,7 @@ import ApiService from "../services/ApiService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useIsFocused } from '@react-navigation/native';
 
 
 interface Lead {
@@ -29,6 +30,7 @@ type RootStackParamList = {
 export default function LeadsScreen() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isFocused = useIsFocused();
 
   // Helper to format date
   function formatDate(dateString: string) {
@@ -45,8 +47,10 @@ export default function LeadsScreen() {
   }
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
+    if (isFocused) {
+      fetchLeads();
+    }
+  }, [isFocused]);
 
   const fetchLeads = async () => {
     const json = await ApiService('member/getleads');
@@ -135,7 +139,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#222',
   },

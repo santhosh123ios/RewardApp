@@ -63,10 +63,6 @@ const CreateLeadScreen = () => {
                 type: res.type || 'application/octet-stream',
                 name: res.name || 'upload',
             });
-            // setTimeout(() => {
-            //     setUploading(false);
-            //     setUploadSuccess(true);
-            // }, 1500);
         } catch (err: any) {
             if (DocumentPicker.isCancel(err)) {
                 // User cancelled the picker
@@ -77,14 +73,31 @@ const CreateLeadScreen = () => {
     };
 
     const handleSubmit = async () => {
+        if (!selectedVendor || !leadName || !description || !uploadedFileName) {
+            Alert.alert('Error', 'Please fill all fields and upload a file.');
+            return;
+        }
         setSubmitting(true);
-        // TODO: Implement submit logic
+        try {
+            const payload = {
+                vendor_id: selectedVendor,
+                lead_name: leadName,
+                lead_description: description,
+                lead_file: uploadedFileName,
+            };
 
-        setTimeout(() => {
+            const json = await ApiService('member/create-leads', 'POST', payload);
             setSubmitting(false);
-            Alert.alert('Lead submitted (mock)');
-            navigation.goBack();
-        }, 1000);
+            if (json?.result?.status) {
+                Alert.alert('Success', 'Lead created successfully!');
+                navigation.goBack();
+            } else {
+                Alert.alert('Error', json?.message || 'Failed to create lead');
+            }
+        } catch (err) {
+            setSubmitting(false);
+            Alert.alert('Error', err.message || 'Unknown error');
+        }
     };
 
     const uploadFiles = async (file) => {
