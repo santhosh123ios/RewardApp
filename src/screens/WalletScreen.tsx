@@ -1,54 +1,145 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput } from 'react-native';
 import colors from '../theme/colors';
+import ApiService from '../services/ApiService';
 
 const windowWidth = Dimensions.get('window').width;
 const tabs = ['Transaction', 'Redeem'];
 
-const mockCard = {
-  cardNumber: '1234 5678 9012 3456',
-  balance: 2500.75,
-  name: 'John Doe',
-  type: 'Platinum',
-};
-
-const mockTransactions = [
-  { id: '1', label: 'Starbucks', amount: -5.99, date: '2024-06-01 10:30 am' },
-  { id: '2', label: 'Amazon', amount: -49.99, date: '2024-05-30 2:15 pm' },
-  { id: '3', label: 'Salary', amount: 2000, date: '2024-05-28 9:00 am' },
-];
-
-const mockRedeems = [
-  { id: '1', label: 'Gift Card', amount: -50, date: '2024-05-25 4:00 pm' },
-  { id: '2', label: 'Movie Ticket', amount: -12, date: '2024-05-20 7:30 pm' },
-];
-
 export default function WalletScreen() {
   const [activeTab, setActiveTab] = useState('Transaction');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [redeems, setRedeems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(true);
+  const [wallet, setWallet] = useState<any>(null);
+  const [redeemModalVisible, setRedeemModalVisible] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState('');
+  const [redeemNote, setRedeemNote] = useState('');
 
-  const renderCard = () => (
-    <View style={styles.cardContainer}>
-      <Text style={styles.cardNumber}>{mockCard.cardNumber}</Text>
-      <View style={styles.cardRow}>
-        <Text style={styles.cardLabel}>Balance</Text>
-        <Text style={styles.cardBalance}>${mockCard.balance.toFixed(2)}</Text>
-      </View>
-      <View style={styles.cardRow}>
-        <Text style={styles.cardName}>{mockCard.name}</Text>
-        <Text style={styles.cardType}>{mockCard.type}</Text>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    fetchWalletDetails();
+  }, []);
 
-  const renderItem = ({ item }: { item: any }) => (
+  useEffect(() => {
+    fetchData();
+  }, [activeTab]);
+
+  const fetchWalletDetails = async () => {
+    setWalletLoading(true);
+    try {
+      const json = await ApiService('member/get_walletDetails');
+      if (json?.result?.status === 1) {
+        setWallet(json.result);
+      } else {
+        setWallet(null);
+      }
+    } catch (e) {
+      setWallet(null);
+    }
+    setWalletLoading(false);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'Transaction') {
+        const json = await ApiService('member/get_transaction');
+        if (json?.result?.status === 1) {
+          setTransactions(json.result.data);
+        } else {
+          setTransactions([]);
+        }
+      } else {
+        const json = await ApiService('member/get_redeem');
+        if (json?.result?.status === 1) {
+          setRedeems(json.result.data);
+        } else {
+          setRedeems([]);
+        }
+      }
+    } catch (e) {
+      setTransactions([]);
+      setRedeems([]);
+    }
+    setLoading(false);
+  };
+
+  const renderCard = () => {
+    if (walletLoading) {
+      return <ActivityIndicator size="large" color={colors.primary} style={{ margin: 32 }} />;
+    }
+    if (!wallet) {
+      return <Text style={{ textAlign: 'center', color: '#888', margin: 32 }}>No wallet data found.</Text>;
+    }
+    const card = wallet.card;
+    const user = wallet.user;
+    const balance = wallet.available_point?.user_balance || '0';
+    return (
+      <View style={styles.cardContainer}>
+        <Text style={styles.cardNumber}>{card.card_no}</Text>
+        <View style={styles.cardRow}>
+          <Text style={styles.cardLabel}>Balance</Text>
+          <Text style={styles.cardBalance}>{balance}</Text>
+        </View>
+        <View style={styles.cardRow}>
+          <Text style={styles.cardName}>{user.name?.toUpperCase()}</Text>
+          <Text style={styles.cardType}>{card.card_type_name}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderTransaction = ({ item }: { item: any }) => (
     <View style={styles.listItem}>
       <View>
-        <Text style={styles.itemLabel}>{item.label}</Text>
-        <Text style={styles.itemDate}>{item.date}</Text>
+        <Text style={styles.itemLabel}>{item.transaction_title}</Text>
+        <Text style={styles.itemDate}>{formatDate(item.transaction_created_at)}</Text>
+        <Text style={styles.itemVendor}>{item.vendor_name}</Text>
       </View>
-      <Text style={[styles.itemAmount, { color: item.amount < 0 ? '#d0021b' : colors.green }]}>${item.amount.toFixed(2)}</Text>
+      <Text style={[styles.itemAmount, { color: item.transaction_cr > 0 ? colors.green : '#d0021b' }]}> 
+        {item.transaction_cr > 0 ? '+' : '-'}{(item.transaction_cr > 0 ? item.transaction_cr : item.transaction_dr).toFixed(2)}
+      </Text>
     </View>
   );
+
+  // Add statusMap for redeem status
+  const redeemStatusMap: { [key: number]: { color: string; text: string } } = {
+    0: { color: 'orange', text: 'PENDING' },
+    1: { color: 'green', text: 'APPROVED' },
+    2: { color: 'red', text: 'REJECTED' },
+  };
+
+  const renderRedeem = ({ item }: { item: any }) => (
+    <View style={styles.listItem}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.itemLabel}>Redeem #{item.redeem_id}</Text>
+        <Text style={styles.itemDate}>{formatDate(item.redeem_created_at)}</Text>
+        <Text style={styles.itemVendor}>{item.notes}</Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={[styles.itemAmount, { color: '#d0021b' }]}>-{item.point}</Text>
+        <Text style={[styles.redeemStatus, { color: redeemStatusMap[item.redeem_status]?.color || 'gray' }]}> 
+          {redeemStatusMap[item.redeem_status]?.text || 'UNKNOWN'}
+        </Text>
+      </View>
+    </View>
+  );
+
+  function formatDate(dateString: string) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12;
+    return `${day} ${month} ${year} ${hours}:${minutes} ${ampm}`;
+  }
+
+  const availablePoints = wallet?.available_point?.user_balance || '0';
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -67,12 +158,61 @@ export default function WalletScreen() {
           ))}
         </View>
         {/* List */}
-        <FlatList
-          data={activeTab === 'Transaction' ? mockTransactions : mockRedeems}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
+        ) : (
+          <FlatList
+            data={activeTab === 'Transaction' ? transactions : redeems}
+            renderItem={activeTab === 'Transaction' ? renderTransaction : renderRedeem}
+            keyExtractor={item => (activeTab === 'Transaction' ? String(item.transaction_id) : String(item.redeem_id))}
+            contentContainerStyle={styles.listContainer}
+            ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No data found.</Text>}
+          />
+        )}
+        {/* Floating Action Button for Redeem tab */}
+        {activeTab === 'Redeem' && (
+          <TouchableOpacity style={styles.fab} onPress={() => setRedeemModalVisible(true)}>
+            <Text style={styles.fabText}>+</Text>
+          </TouchableOpacity>
+        )}
+        {/* Redeem Modal */}
+        <Modal
+          visible={redeemModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setRedeemModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create Redeem Request</Text>
+              <Text style={styles.modalLabel}>Available Points: <Text style={{ fontWeight: 'bold' }}>{availablePoints}</Text></Text>
+              <Text style={styles.modalLabel}>Points</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter points"
+                keyboardType="numeric"
+                value={redeemPoints}
+                onChangeText={setRedeemPoints}
+              />
+              <Text style={styles.modalLabel}>Note</Text>
+              <TextInput
+                style={[styles.modalInput, { height: 60 }]}
+                placeholder="Enter note"
+                value={redeemNote}
+                onChangeText={setRedeemNote}
+                multiline
+              />
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRedeemModalVisible(false)}>
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalSubmitBtn} onPress={() => {/* TODO: Submit redeem */}}>
+                  <Text style={styles.modalSubmitText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -186,8 +326,107 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
+  itemVendor: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
   itemAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  redeemStatus: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 10,
+    backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    zIndex: 10,
+  },
+  fabText: {
+    color: '#fff',
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'stretch',
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  modalLabel: {
+    fontSize: 15,
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    backgroundColor: '#fff',
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  modalCancelText: {
+    color: '#222',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalSubmitBtn: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  modalSubmitText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

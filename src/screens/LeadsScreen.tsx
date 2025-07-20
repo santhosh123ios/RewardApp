@@ -1,4 +1,4 @@
-import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import colors from "../theme/colors";
 import { useEffect, useState } from "react";
 import ApiService from "../services/ApiService";
@@ -6,6 +6,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
+
+const windowHeight = Dimensions.get('window').height;
 
 
 interface Lead {
@@ -97,11 +99,7 @@ export default function LeadsScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* Header */}
-      <View style={styles.header}>
-          <Text style={styles.headerTitle}>Leads</Text>
-      </View>
-
+      
       <View style={{  backgroundColor: '#fff' }}>
         
         <FlatList
@@ -125,8 +123,8 @@ export default function LeadsScreen() {
 
 const styles = StyleSheet.create({
   safeContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
+    height: windowHeight-50
   },
   header: {
     paddingTop: 20,
@@ -207,6 +205,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     zIndex: 10,
+    marginBottom: 10,
   },
   fabText: {
     color: '#fff',

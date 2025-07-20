@@ -17,6 +17,8 @@ import ApiService from '../services/ApiService';
 
 
 const windowWidth = Dimensions.get('window').width;
+const windowHeight = Dimensions.get('window').height;
+
 const tabs = ['Offers', 'Products'];
 
 type OfferItem = {
@@ -154,21 +156,23 @@ const renderCardProduct = ({ item }: { item: ProductItem }) => (
   return (
     <SafeAreaView style={styles.safeContainer}>
       {/* Tab selector */}
-      <View style={styles.tabBar}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tabItem,
-                activeTab === tab && styles.activeTabItem,
-              ]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      <View style={styles.TabView}>
+        <View style={styles.tabBar}>
+            {tabs.map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.tabItem,
+                  activeTab === tab && styles.activeTabItem,
+                ]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
       {/* Offers Grid */}
@@ -206,13 +210,19 @@ const renderCardProduct = ({ item }: { item: ProductItem }) => (
 
 const styles = StyleSheet.create({
   safeContainer: {
-  flex: 1,
-  backgroundColor: '#fff',
+  backgroundColor: colors.white,
+  height: windowHeight-50
 },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
 
+  },
+  TabView: {
+    height: 60,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabBar: {
     width: 250,
