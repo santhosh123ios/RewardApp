@@ -69,7 +69,7 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>{profile?.name?.toUpperCase() || ''}</Text>
           <Text style={styles.profileEmail}>{profile?.email || ''}</Text>
         </View>
-        <TouchableOpacity style={styles.editBtn}>
+        <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('ProfileEdit')}>
           <Icon name="create-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
       </View>

@@ -216,7 +216,7 @@ export default function WalletScreen() {
         <Modal
           visible={redeemModalVisible}
           transparent
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setRedeemModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
@@ -441,6 +441,14 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'stretch',
     elevation: 8,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    // Add a little scale and fade effect
+    transform: [{ scale: 1 }],
+    opacity: 1,
   },
   modalTitle: {
     fontSize: 20,
