@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
 import colors from '../theme/colors';
 import ApiService from '../services/ApiService';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const windowWidth = Dimensions.get('window').width;
 const tabs = ['Transaction', 'Redeem'];
@@ -16,6 +17,8 @@ export default function WalletScreen() {
   const [redeemModalVisible, setRedeemModalVisible] = useState(false);
   const [redeemPoints, setRedeemPoints] = useState('');
   const [redeemNote, setRedeemNote] = useState('');
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemStatus, setRedeemStatus] = useState<'success' | 'failed' | null>(null);
 
   useEffect(() => {
     fetchWalletDetails();
@@ -24,6 +27,19 @@ export default function WalletScreen() {
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (redeemStatus === 'success') {
+      const timer = setTimeout(() => {
+        setRedeemModalVisible(false);
+        setRedeemPoints('');
+        setRedeemNote('');
+        setRedeemStatus(null);
+        fetchData(); // Refresh the redeem list
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [redeemStatus]);
 
   const fetchWalletDetails = async () => {
     setWalletLoading(true);
@@ -141,6 +157,27 @@ export default function WalletScreen() {
 
   const availablePoints = wallet?.available_point?.user_balance || '0';
 
+  const handleRedeemSubmit = async () => {
+    setRedeemLoading(true);
+    setRedeemStatus(null);
+    try {
+      const payload = {
+        redeem_point: redeemPoints,
+        redeem_notes: redeemNote,
+      };
+      const json = await ApiService('member/add_redeem', 'POST', payload);
+      if (json?.result?.status === 1) {
+        setRedeemStatus('success');
+        // Optionally refresh redeems list here
+      } else {
+        setRedeemStatus('failed');
+      }
+    } catch (e) {
+      setRedeemStatus('failed');
+    }
+    setRedeemLoading(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.safeContainer}>
@@ -185,31 +222,59 @@ export default function WalletScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Create Redeem Request</Text>
-              <Text style={styles.modalLabel}>Available Points: <Text style={{ fontWeight: 'bold' }}>{availablePoints}</Text></Text>
-              <Text style={styles.modalLabel}>Points</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Enter points"
-                keyboardType="numeric"
-                value={redeemPoints}
-                onChangeText={setRedeemPoints}
-              />
-              <Text style={styles.modalLabel}>Note</Text>
-              <TextInput
-                style={[styles.modalInput, { height: 60 }]}
-                placeholder="Enter note"
-                value={redeemNote}
-                onChangeText={setRedeemNote}
-                multiline
-              />
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRedeemModalVisible(false)}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.modalSubmitBtn} onPress={() => {/* TODO: Submit redeem */}}>
-                  <Text style={styles.modalSubmitText}>Submit</Text>
-                </TouchableOpacity>
-              </View>
+              {redeemLoading ? (
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
+              ) : redeemStatus === 'success' ? (
+                <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                  <Icon name="checkmark-circle" size={64} color="green" style={{ marginBottom: 12 }} />
+                  <Text style={{ color: 'green', fontWeight: 'bold', fontSize: 18 }}>Success!</Text>
+                  <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
+                    Your redeem request was submitted successfully and will be processed soon.
+                  </Text>
+                  
+                </View>
+              ) : redeemStatus === 'failed' ? (
+                <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                  <Icon name="close-circle" size={64} color="red" style={{ marginBottom: 12 }} />
+                  <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Failed!</Text>
+                  <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
+                    Your redeem request could not be processed. Please check your input or try again later.
+                  </Text>
+                  <TouchableOpacity style={styles.modalTryAgainBtn} onPress={() => {
+                    setRedeemStatus(null);
+                  }}>
+                    <Text style={styles.modalTryAgainText}>Try Again</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.modalLabel}>Available Points: <Text style={{ fontWeight: 'bold' }}>{availablePoints}</Text></Text>
+                  <Text style={styles.modalLabel}>Points</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Enter points"
+                    keyboardType="numeric"
+                    value={redeemPoints}
+                    onChangeText={setRedeemPoints}
+                  />
+                  <Text style={styles.modalLabel}>Note</Text>
+                  <TextInput
+                    style={[styles.modalInput, { height: 60 }]}
+                    placeholder="Enter note"
+                    value={redeemNote}
+                    onChangeText={setRedeemNote}
+                    multiline
+                  />
+                  <View style={styles.modalBtnRow}>
+                    <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRedeemModalVisible(false)}>
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.modalSubmitBtn} onPress={handleRedeemSubmit}>
+                      <Text style={styles.modalSubmitText}>Submit</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </Modal>
@@ -405,14 +470,14 @@ const styles = StyleSheet.create({
   },
   modalCancelBtn: {
     flex: 1,
-    backgroundColor: '#eee',
+    backgroundColor: '#e0e0e0',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginRight: 8,
   },
   modalCancelText: {
-    color: '#222',
+    color: '#222', // black for contrast on ash
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -426,6 +491,17 @@ const styles = StyleSheet.create({
   },
   modalSubmitText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalTryAgainBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
+    backgroundColor: '#fff',
+  },
+  modalTryAgainText: {
+    color: colors.label,
     fontWeight: 'bold',
     fontSize: 16,
   },
