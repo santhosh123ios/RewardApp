@@ -1648,6 +1648,35 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
+  - react-native-date-picker (5.0.13):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - react-native-document-picker (9.3.1):
     - boost
     - DoubleConversion
@@ -2357,6 +2386,69 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - RNImageCropPicker (0.50.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNImageCropPicker/QBImagePickerController (= 0.50.1)
+    - SocketRocket
+    - TOCropViewController (~> 2.7.4)
+    - Yoga
+  - RNImageCropPicker/QBImagePickerController (0.50.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-RCTImage
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - TOCropViewController (~> 2.7.4)
+    - Yoga
   - RNReanimated (3.18.0):
     - boost
     - DoubleConversion
@@ -2656,6 +2748,7 @@ PODS:
     - SocketRocket
     - Yoga
   - SocketRocket (0.7.1)
+  - TOCropViewController (2.7.4)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2700,6 +2793,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-document-picker (from `../node_modules/react-native-document-picker`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2737,6 +2831,7 @@ DEPENDENCIES:
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -2747,6 +2842,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - SocketRocket
+    - TOCropViewController
 
 EXTERNAL SOURCES:
   boost:
@@ -2830,6 +2926,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-date-picker:
+    :path: "../node_modules/react-native-date-picker"
   react-native-document-picker:
     :path: "../node_modules/react-native-document-picker"
   react-native-safe-area-context:
@@ -2904,6 +3002,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-picker/picker"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNImageCropPicker:
+    :path: "../node_modules/react-native-image-crop-picker"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2956,6 +3056,7 @@ SPEC CHECKSUMS:
   React-logger: 2f0d40bc8e648fbb1ff3b6580ad54189a8753290
   React-Mapbuffer: 9a7c65078c6851397c1999068989e4fc239d0c80
   React-microtasksnativemodule: 4f1ef719ba6c7ebbd2d75346ffa2916f9b4771c9
+  react-native-date-picker: cd4e84c94ba7d03fda6967af15d48894b3b68b10
   react-native-document-picker: e1b6d84bd94c1447fa1594c149e2d82dc166139c
   react-native-safe-area-context: 339885703b6dd1be2bce42d9c0b0350c21180032
   React-NativeModulesApple: f6f696e510b9d89c3c06b7764f56947dc13ae922
@@ -2993,11 +3094,13 @@ SPEC CHECKSUMS:
   RNCClipboard: acf8ae07037c21f17d9284ca56e982186ed21465
   RNCPicker: 26b69a32728b3ef1e791755c15e3a95f2f58d23e
   RNGestureHandler: c202f13fa95347076d8aca4ccb61739b067396cb
+  RNImageCropPicker: 36d402fc475d75e1208f8b81ba294c84ac7f09eb
   RNReanimated: 2010262133feb53009f16faaa404042eed7da018
   RNScreens: 45a4564413205e2a1695d40bbc0297f6eefc9b74
   RNSVG: c73af7848d94ca3e8136a5191d055e3c1d6fedab
   RNVectorIcons: 417c003b0ce7ac7748aa548720fd7127d1d74ded
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
   Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3
 
 PODFILE CHECKSUM: 42f8fe23b75da13a0e92ca793900095d1318e3e8

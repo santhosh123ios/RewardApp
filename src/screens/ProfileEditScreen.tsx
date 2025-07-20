@@ -1,24 +1,142 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import colors from '../theme/colors';
+import ApiService from '../services/ApiService';
+import { Picker } from '@react-native-picker/picker';
+import { Dropdown } from 'react-native-element-dropdown';
+import ImageCropPicker from 'react-native-image-crop-picker';
+import DatePicker from 'react-native-date-picker';
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
-  // Mock state for all fields
+  // State for all fields
   const [profileImg, setProfileImg] = React.useState(require('../../assets/dummy.jpg'));
-  const [dob, setDob] = React.useState('1994-09-04');
-  const [gender, setGender] = React.useState('Male');
-  const [job, setJob] = React.useState('IT Specialist');
-  const [address, setAddress] = React.useState('thalil house');
-  const [name, setName] = React.useState('Santhosh Thaliyil');
-  const [phone, setPhone] = React.useState('9678560115');
-  const [password, setPassword] = React.useState('123456');
+  const [dob, setDob] = React.useState('');
+  const [dobPickerOpen, setDobPickerOpen] = React.useState(false);
+  const [dobDate, setDobDate] = React.useState<Date | null>(null);
+  const [gender, setGender] = React.useState('');
+  const [job, setJob] = React.useState('');
+  const [address, setAddress] = React.useState('');
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
-  const [acNo, setAcNo] = React.useState('1234564444444');
-  const [iban, setIban] = React.useState('12341234');
-  const [bankName, setBankName] = React.useState('ICIC');
+  const [acNo, setAcNo] = React.useState('');
+  const [iban, setIban] = React.useState('');
+  const [bankName, setBankName] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [saveStatus, setSaveStatus] = React.useState<'success' | 'failed' | null>(null);
+  const [imgUploading, setImgUploading] = React.useState(false);
+
+  React.useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const json = await ApiService('member/get_profile');
+      if (json?.result?.status === 1) {
+        const data = json.result.data;
+        setName(data.name || '');
+        setPhone(data.phone || '');
+        setProfileImg(data.profile_img ? { uri: 'https://crmgcc.net/uploads/' + data.profile_img } : require('../../assets/dummy.jpg'));
+        setPassword(data.password || '');
+        setDob(data.dob || '');
+        setDobDate(data.dob ? new Date(data.dob) : null);
+        setGender(data.gender === 0 ? 'Male' : data.gender === 1 ? 'Female' : '');
+        setAddress(data.address || '');
+        setJob(data.job || '');
+        setAcNo(data.ac_no || '');
+        setIban(data.iban_no || '');
+        setBankName(data.bank_name || '');
+      }
+    } catch (e) {}
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveStatus(null);
+    try {
+      const payload = {
+        name,
+        phone,
+        profile_img: typeof profileImg === 'string' ? profileImg : undefined, // handle image upload separately if needed
+        password,
+        dob,
+        gender: gender === 'Male' ? 0 : gender === 'Female' ? 1 : '',
+        address,
+        job,
+        ac_no: acNo,
+        iban_no: iban,
+        bank_name: bankName,
+      };
+      const json = await ApiService('member/update_profile', 'POST', payload);
+      if (json?.result?.status === 1) {
+        setSaveStatus('success');
+        setTimeout(() => {
+          setSaveStatus(null);
+          navigation.goBack();
+        }, 1500);
+      } else {
+        setSaveStatus('failed');
+      }
+    } catch (e) {
+      setSaveStatus('failed');
+    }
+    setSaving(false);
+  };
+
+  const handleImagePick = async () => {
+    try {
+      setImgUploading(true);
+      // Pick and crop image
+      const image = await ImageCropPicker.openPicker({
+        width: 400,
+        height: 400,
+        cropping: true,
+        cropperCircleOverlay: false,
+        compressImageQuality: 0.8,
+        mediaType: 'photo',
+        cropperToolbarTitle: 'Crop Image',
+        forceJpg: true,
+      });
+      // Upload image
+      const formData = new FormData();
+      formData.append('file', {
+        uri: image.path,
+        type: image.mime,
+        name: image.filename || 'profile.jpg',
+      });
+      const uploadRes = await ApiService('member/upload', 'POST', formData);
+      const filename = uploadRes?.filename || uploadRes?.result?.data?.filename;
+      if (filename) {
+        // Update profile image with filename
+        const updateRes = await ApiService('member/update_profile_image', 'POST', { profile_img: filename });
+        if (updateRes?.result?.status === 1) {
+          setProfileImg({ uri: 'https://crmgcc.net/uploads/' + filename });
+        } else {
+          Alert.alert('Error', 'Failed to update profile image.');
+        }
+      } else {
+        Alert.alert('Error', 'Failed to upload image.');
+      }
+    } catch (e: any) {
+      if (e?.code !== 'E_PICKER_CANCELLED') {
+        Alert.alert('Error', 'Image selection failed.');
+      }
+    }
+    setImgUploading(false);
+  };
+
+  const genderOptions = [
+    { label: 'Male', value: 'Male' },
+    { label: 'Female', value: 'Female' },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,53 +146,106 @@ export default function ProfileEditScreen() {
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => {/* TODO: Save action */}}>
+        <TouchableOpacity style={styles.headerBtn} onPress={handleSave}>
           <Text style={styles.saveText}>Save</Text>
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* 1. Profile Image */}
-        <Text style={styles.sectionTitle}>Profile Image</Text>
-        <View style={styles.profileImgRow}>
-          <Image source={profileImg} style={styles.profileImg} />
-          <TouchableOpacity style={styles.updateImgBtn} onPress={() => {/* TODO: Update image */}}>
-            <Text style={styles.updateImgText}>Update Image</Text>
-          </TouchableOpacity>
-        </View>
-        {/* 2. Personal Details */}
-        <Text style={styles.sectionTitle}>Personal Details</Text>
-        <TextInput style={styles.input} placeholder="Date of Birth" value={dob} onChangeText={setDob} />
-        <TextInput style={styles.input} placeholder="Gender" value={gender} onChangeText={setGender} />
-        <TextInput style={styles.input} placeholder="Job" value={job} onChangeText={setJob} />
-        <TextInput style={styles.input} placeholder="Address" value={address} onChangeText={setAddress} />
-        {/* 3. Basic Details */}
-        <Text style={styles.sectionTitle}>Basic Details</Text>
-        <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
-        <TextInput style={styles.input} placeholder="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-          />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowPassword((prev) => !prev)}
-          >
-            <Icon
-              name={showPassword ? 'eye-off' : 'eye'}
-              size={22}
-              color="#888"
+        {loading ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 40 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <>
+            {/* 1. Profile Image */}
+            <Text style={styles.sectionTitle}>Profile Image</Text>
+            <View style={styles.profileImgRow}>
+              <Image source={profileImg} style={styles.profileImg} />
+              <TouchableOpacity style={styles.updateImgBtn} onPress={handleImagePick}>
+                <Text style={styles.updateImgText}>{imgUploading ? 'Uploading...' : 'Update Image'}</Text>
+              </TouchableOpacity>
+            </View>
+            {/* 2. Personal Details */}
+            <Text style={styles.sectionTitle}>Personal Details</Text>
+            <TouchableOpacity onPress={() => setDobPickerOpen(true)}>
+              <TextInput
+                style={styles.input}
+                placeholder="Date of Birth"
+                value={dob}
+                editable={false}
+                pointerEvents="none"
+              />
+            </TouchableOpacity>
+            <DatePicker
+              modal
+              open={dobPickerOpen}
+              date={dobDate || (dob ? new Date(dob) : new Date())}
+              mode="date"
+              maximumDate={new Date()}
+              onConfirm={(date: Date) => {
+                setDobPickerOpen(false);
+                setDobDate(date);
+                // Format as YYYY-MM-DD
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                setDob(`${yyyy}-${mm}-${dd}`);
+              }}
+              onCancel={() => setDobPickerOpen(false)}
             />
-          </TouchableOpacity>
-        </View>
-        {/* 4. Bank Details */}
-        <Text style={styles.sectionTitle}>Bank Details</Text>
-        <TextInput style={styles.input} placeholder="Account Number" value={acNo} onChangeText={setAcNo} />
-        <TextInput style={styles.input} placeholder="IBAN Number" value={iban} onChangeText={setIban} />
-        <TextInput style={styles.input} placeholder="Bank Name" value={bankName} onChangeText={setBankName} />
+            <Dropdown
+              style={styles.dropdown}
+              data={genderOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select Gender"
+              value={gender}
+              onChange={item => setGender(item.value)}
+              containerStyle={styles.dropdownContainer}
+            />
+            <TextInput style={styles.input} placeholder="Job" value={job} onChangeText={setJob} />
+            <TextInput style={styles.input} placeholder="Address" value={address} onChangeText={setAddress} />
+            {/* 3. Basic Details */}
+            <Text style={styles.sectionTitle}>Basic Details</Text>
+            <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+            <TextInput style={styles.input} placeholder="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword((prev) => !prev)}
+              >
+                <Icon
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+            {/* 4. Bank Details */}
+            <Text style={styles.sectionTitle}>Bank Details</Text>
+            <TextInput style={styles.input} placeholder="Account Number" value={acNo} onChangeText={setAcNo} />
+            <TextInput style={styles.input} placeholder="IBAN Number" value={iban} onChangeText={setIban} />
+            <TextInput style={styles.input} placeholder="Bank Name" value={bankName} onChangeText={setBankName} />
+            {saving && (
+              <View style={{ alignItems: 'center', marginTop: 20 }}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            )}
+            {saveStatus === 'success' && (
+              <Text style={{ color: 'green', textAlign: 'center', marginTop: 16, fontWeight: 'bold' }}>Profile updated successfully!</Text>
+            )}
+            {saveStatus === 'failed' && (
+              <Text style={{ color: 'red', textAlign: 'center', marginTop: 16, fontWeight: 'bold' }}>Failed to update profile. Please try again.</Text>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -172,5 +343,40 @@ const styles = StyleSheet.create({
     bottom: 30,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  picker: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    paddingHorizontal: 12,
+    height: 48,
+  },
+  dropdownContainer: {
+    borderRadius: 8,
+  },
+  dropdownInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  dropdownPicker: {
+    width: '100%',
+    height: 48,
+    backgroundColor: 'transparent',
+    color: '#222',
   },
 }); 
