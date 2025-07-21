@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 //import { Ionicons } from '@expo/vector-icons'; // or react-native-vector-icons/Ionicons
 import Icon from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,8 +18,8 @@ import colors from '../../theme/colors';
 const windowWidth = Dimensions.get('window').width;
 
 const ProductdetailsScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const route = useRoute<any>();
   const product = route.params?.product;
   //Clipboard.setString("code");
 
@@ -94,7 +95,7 @@ const ProductdetailsScreen = () => {
         
         <TouchableOpacity
         style={styles.redeemButton}
-        onPress={() => setModalVisible(true)}
+        onPress={() => navigation.navigate('CreateLead', { vendor: product?.vendor || product })}
         >
             <Text style={styles.redeemButtonText}>Create a Lead</Text>
         </TouchableOpacity>

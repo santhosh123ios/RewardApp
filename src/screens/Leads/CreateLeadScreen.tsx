@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Text, TextInput, Button, Platform, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import globalStyles from '../../theme/globalStyles';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
 import DocumentPicker from 'react-native-document-picker';
@@ -21,8 +21,10 @@ function getTruncatedFileName(name: string, maxLength = 24) {
 
 const CreateLeadScreen = () => {
     const navigation = useNavigation();
+    const route = useRoute<RouteProp<{ params: { vendor?: { id?: string; name?: string; vendor_name?: string } } }, 'params'>>();
+    const vendorParam = route.params?.vendor;
     const [vendors, setVendors] = useState<Array<{ id: string; name?: string; vendor_name?: string }>>([]);
-    const [selectedVendor, setSelectedVendor] = useState('');
+    const [selectedVendor, setSelectedVendor] = useState<string>('');
     const [leadName, setLeadName] = useState('');
     const [description, setDescription] = useState('');
     const [file, setFile] = useState<DocumentPickerResponse | null>(null);
@@ -32,17 +34,21 @@ const CreateLeadScreen = () => {
     const [uploadedFileName, setUploadedFileName] = useState('');
 
     useEffect(() => {
-        // TODO: Replace with real endpoint if available
         const fetchVendors = async () => {
             try {
-                // Example endpoint, update as needed
                 const json = await ApiService('member/vendorlist');
                 if (json?.result?.status === 1) {
                     setVendors(json.result.data);
+                    // If vendorParam is provided, pre-select it
+                    if (vendorParam) {
+                        // Try to find the vendor by id or name
+                        const found = json.result.data.find((v: { id: string; name?: string; vendor_name?: string }) => v.id === vendorParam.id || v.name === vendorParam.name || v.vendor_name === vendorParam.vendor_name);
+                        if (found) setSelectedVendor(found.id);
+                    }
                 } else {
                     setVendors([]);
                 }
-            } catch (e) {
+            } catch (e: unknown) {
                 setVendors([]);
             }
         };
@@ -100,7 +106,7 @@ const CreateLeadScreen = () => {
         }
     };
 
-    const uploadFiles = async (file) => {
+    const uploadFiles = async (file: { uri: string; type: string; name: string }) => {
         setUploading(true);
         setUploadSuccess(false);
 
@@ -124,10 +130,10 @@ const CreateLeadScreen = () => {
                 setUploadSuccess(false);
                 //Alert.alert('Upload failed', json?.message || 'Unknown error');
             }
-        } catch (err) {
+        } catch (err: unknown) {
             setUploading(false);
             setUploadSuccess(false);
-            Alert.alert('Upload error', err.message || 'Unknown error');
+            Alert.alert('Upload error', (err as Error).message || 'Unknown error');
         }
     };
 
@@ -146,7 +152,7 @@ const CreateLeadScreen = () => {
                 <View style={styles.pickerWrapper}>
                     <Picker
                         selectedValue={selectedVendor}
-                        onValueChange={(itemValue) => setSelectedVendor(itemValue)}
+                        onValueChange={(itemValue: string) => setSelectedVendor(itemValue)}
                         style={styles.picker}
                     >
                         <Picker.Item label="Select a vendor" value="" />
