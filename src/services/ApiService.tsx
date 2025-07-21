@@ -4,12 +4,14 @@ import { Platform } from 'react-native';
 
 const BASE_URL = 'https://crmgcc.net/api/';
 
-const ApiService = async (endpoint: string, method: string = 'GET', body: any = null) => {
+// ApiService now accepts an optional onTokenNull callback, called if token is null.
+const ApiService = async (endpoint: string, method: string = 'GET', body: any = null, onTokenNull?: () => void) => {
   try {
     const token = await AsyncStorage.getItem('auth_token');
 
     if (!token) {
       console.warn('No auth token found');
+      if (onTokenNull) onTokenNull();
       return null;
     }
 
@@ -33,6 +35,12 @@ const ApiService = async (endpoint: string, method: string = 'GET', body: any = 
 
     const response = await fetch(BASE_URL + endpoint, options);
     const json = await response.json();
+
+    // If API returns token expired error, trigger logout
+    if (json?.error && Array.isArray(json.error) && json.error[0]?.message === 'Token expired') {
+      if (onTokenNull) onTokenNull();
+      return null;
+    }
 
     return json;
   } catch (error) {

@@ -19,7 +19,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { setLoggedIn } = useContext(AuthContext);
+  const { setLoggedIn, logout } = useContext(AuthContext);
 
   useEffect(() => {
     fetchProfile();
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const json = await ApiService('member/get_profile');
+      const json = await ApiService('member/get_profile', 'GET', null, logout);
       if (json?.result?.status === 1) {
         setProfile(json.result.data);
       } else {
@@ -45,6 +45,16 @@ export default function ProfileScreen() {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('isLoggedIn');
       setLoggedIn(false); // This will trigger the app to show the Login screen
+    } catch (e) {
+      Alert.alert('Error', 'Failed to logout.');
+    }
+  };
+
+  const handleProfile = async () => {
+    try {
+      await AsyncStorage.removeItem('auth_token');
+      // await AsyncStorage.removeItem('isLoggedIn');
+      // setLoggedIn(false); // This will trigger the app to show the Login screen
     } catch (e) {
       Alert.alert('Error', 'Failed to logout.');
     }
@@ -76,7 +86,7 @@ export default function ProfileScreen() {
       {/* Menu Options */}
       <View style={styles.menuSection}>
         <MenuButton icon="business-outline" label="Vendor" onPress={() => {}} color="#222" />
-        <MenuButton icon="document-text-outline" label="Report" onPress={() => {}} color="#222" />
+        <MenuButton icon="document-text-outline" label="Report" onPress={handleProfile} color="#222" />
         <MenuButton icon="alert-circle-outline" label="Complaints" onPress={() => {}} color="#222" />
         <MenuButton icon="log-out-outline" label="Logout" onPress={handleLogout} color={colors.red || '#d0021b'} />
       </View>

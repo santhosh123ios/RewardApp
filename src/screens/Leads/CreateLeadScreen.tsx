@@ -8,6 +8,7 @@ import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
 import DocumentPicker from 'react-native-document-picker';
 import type { DocumentPickerResponse } from 'react-native-document-picker';
+import { AuthContext } from '../../context/AuthContext';
 
 function getTruncatedFileName(name: string, maxLength = 24) {
   if (name.length <= maxLength) return name;
@@ -23,6 +24,7 @@ const CreateLeadScreen = () => {
     const navigation = useNavigation();
     const route = useRoute<RouteProp<{ params: { vendor?: { id?: string; name?: string; vendor_name?: string } } }, 'params'>>();
     const vendorParam = route.params?.vendor;
+    const { logout } = React.useContext(AuthContext);
     const [vendors, setVendors] = useState<Array<{ id: string; name?: string; vendor_name?: string }>>([]);
     const [selectedVendor, setSelectedVendor] = useState<string>('');
     const [leadName, setLeadName] = useState('');
@@ -36,7 +38,7 @@ const CreateLeadScreen = () => {
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-                const json = await ApiService('member/vendorlist');
+                const json = await ApiService('member/vendorlist', 'GET', null, logout);
                 if (json?.result?.status === 1) {
                     setVendors(json.result.data);
                     // If vendorParam is provided, pre-select it
@@ -92,7 +94,7 @@ const CreateLeadScreen = () => {
                 lead_file: uploadedFileName,
             };
 
-            const json = await ApiService('member/create-leads', 'POST', payload);
+            const json = await ApiService('member/create-leads', 'POST', payload, logout);
             setSubmitting(false);
             if (json?.result?.status) {
                 Alert.alert('Success', 'Lead created successfully!');
@@ -118,7 +120,7 @@ const CreateLeadScreen = () => {
         });
 
         try {
-            const json = await ApiService('member/upload', 'POST', formData);
+            const json = await ApiService('member/upload', 'POST', formData, logout);
             console.log('Upload response:', json);
             setUploading(false);
             if (json?.success) {

@@ -7,6 +7,7 @@ type AuthContextType = {
   isLoggedIn: boolean;
   setLoggedIn: (val: boolean) => void;
   loading: boolean;
+  logout: () => Promise<void>;
 };
 
 // ✅ Default value for createContext
@@ -14,6 +15,7 @@ export const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   setLoggedIn: () => {},
   loading: true,
+  logout: async () => {},
 });
 
 type AuthProviderProps = {
@@ -34,8 +36,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkLogin();
   }, []);
 
+  const logout = async () => {
+    await AsyncStorage.removeItem('auth_token');
+    await AsyncStorage.removeItem('isLoggedIn');
+    setIsLoggedIn(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setLoggedIn: setIsLoggedIn, loading }}>
+    <AuthContext.Provider value={{ isLoggedIn, setLoggedIn: setIsLoggedIn, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,11 +1,12 @@
 import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import colors from "../theme/colors";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import ApiService from "../services/ApiService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useIsFocused } from '@react-navigation/native';
+import { AuthContext } from '../context/AuthContext';
 
 const windowHeight = Dimensions.get('window').height;
 
@@ -32,6 +33,7 @@ export default function LeadsScreen() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
+  const { logout } = useContext(AuthContext);
 
   // Helper to format date
   function formatDate(dateString: string) {
@@ -54,7 +56,7 @@ export default function LeadsScreen() {
   }, [isFocused]);
 
   const fetchLeads = async () => {
-    const json = await ApiService('member/getleads');
+    const json = await ApiService('member/getleads', 'GET', null, logout);
     console.log(json);
     if (json?.result?.status === 1) {
       setLeads(json.result.data);

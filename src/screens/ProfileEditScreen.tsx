@@ -8,9 +8,11 @@ import { Picker } from '@react-native-picker/picker';
 import { Dropdown } from 'react-native-element-dropdown';
 import ImageCropPicker from 'react-native-image-crop-picker';
 //import DatePicker from 'react-native-date-picker';
+import { AuthContext } from '../context/AuthContext';
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
+  const { logout } = React.useContext(AuthContext);
   // State for all fields
   const [profileImg, setProfileImg] = React.useState(require('../../assets/dummy.jpg'));
   const [dob, setDob] = React.useState('');
@@ -38,7 +40,7 @@ export default function ProfileEditScreen() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const json = await ApiService('member/get_profile');
+      const json = await ApiService('member/get_profile', 'GET', null, logout);
       if (json?.result?.status === 1) {
         const data = json.result.data;
         setName(data.name || '');
@@ -75,7 +77,7 @@ export default function ProfileEditScreen() {
         iban_no: iban,
         bank_name: bankName,
       };
-      const json = await ApiService('member/update_profile', 'POST', payload);
+      const json = await ApiService('member/update_profile', 'POST', payload, logout);
       if (json?.result?.status === 1) {
         setSaveStatus('success');
         setTimeout(() => {
@@ -112,11 +114,11 @@ export default function ProfileEditScreen() {
         type: image.mime,
         name: image.filename || 'profile.jpg',
       });
-      const uploadRes = await ApiService('member/upload', 'POST', formData);
+      const uploadRes = await ApiService('member/upload', 'POST', formData, logout);
       const filename = uploadRes?.filename || uploadRes?.result?.data?.filename;
       if (filename) {
         // Update profile image with filename
-        const updateRes = await ApiService('member/update_profile_image', 'POST', { profile_img: filename });
+        const updateRes = await ApiService('member/update_profile_image', 'POST', { profile_img: filename }, logout);
         if (updateRes?.result?.status === 1) {
           setProfileImg({ uri: 'https://crmgcc.net/uploads/' + filename });
         } else {

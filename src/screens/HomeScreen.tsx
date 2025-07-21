@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import colors from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../services/ApiService';
+import { AuthContext } from '../context/AuthContext';
 
 
 const windowWidth = Dimensions.get('window').width;
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const [loadingProd, setLoadingProd] = useState(true);
 
   const navigation = useNavigation();
+  const { logout } = useContext(AuthContext);
   
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function HomeScreen() {
 const fetchOffers = async () => {
   setLoading(true);
   try {
-    const json = await ApiService('member/get_all_offers');
+    const json = await ApiService('member/get_all_offers', 'GET', null, logout);
 
     if (json?.result?.status === 1) {
       setOffers(json.result.data);
@@ -103,7 +105,7 @@ const fetchOffers = async () => {
 const fetchProducts = async () => {
   setLoadingProd(true);
   try {
-    const json = await ApiService('member/get_all_product');
+    const json = await ApiService('member/get_all_product', 'GET', null, logout);
 
     if (json?.result?.status === 1) {
       setProducts(json.result.data);

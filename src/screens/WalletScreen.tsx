@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
 import colors from '../theme/colors';
 import ApiService from '../services/ApiService';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { AuthContext } from '../context/AuthContext';
 
 const windowWidth = Dimensions.get('window').width;
 const tabs = ['Transaction', 'Redeem'];
@@ -19,6 +20,7 @@ export default function WalletScreen() {
   const [redeemNote, setRedeemNote] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [redeemStatus, setRedeemStatus] = useState<'success' | 'failed' | null>(null);
+  const { logout } = useContext(AuthContext);
 
   useEffect(() => {
     fetchWalletDetails();
@@ -44,7 +46,7 @@ export default function WalletScreen() {
   const fetchWalletDetails = async () => {
     setWalletLoading(true);
     try {
-      const json = await ApiService('member/get_walletDetails');
+      const json = await ApiService('member/get_walletDetails', 'GET', null, logout);
       if (json?.result?.status === 1) {
         setWallet(json.result);
       } else {
@@ -60,14 +62,14 @@ export default function WalletScreen() {
     setLoading(true);
     try {
       if (activeTab === 'Transaction') {
-        const json = await ApiService('member/get_transaction');
+        const json = await ApiService('member/get_transaction', 'GET', null, logout);
         if (json?.result?.status === 1) {
           setTransactions(json.result.data);
         } else {
           setTransactions([]);
         }
       } else {
-        const json = await ApiService('member/get_redeem');
+        const json = await ApiService('member/get_redeem', 'GET', null, logout);
         if (json?.result?.status === 1) {
           setRedeems(json.result.data);
         } else {
@@ -165,7 +167,7 @@ export default function WalletScreen() {
         redeem_point: redeemPoints,
         redeem_notes: redeemNote,
       };
-      const json = await ApiService('member/add_redeem', 'POST', payload);
+      const json = await ApiService('member/add_redeem', 'POST', payload, logout);
       if (json?.result?.status === 1) {
         setRedeemStatus('success');
         // Optionally refresh redeems list here
