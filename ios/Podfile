@@ -19,8 +19,8 @@ target 'RewardApp' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    :hermes_enabled => true,
+    :fabric_enabled => false, # 👈 turn off Fabric if it's causing issues
   )
 
   post_install do |installer|

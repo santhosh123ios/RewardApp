@@ -7,7 +7,7 @@ import ApiService from '../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
 import { Dropdown } from 'react-native-element-dropdown';
 import ImageCropPicker from 'react-native-image-crop-picker';
-import DatePicker from 'react-native-date-picker';
+//import DatePicker from 'react-native-date-picker';
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
@@ -176,7 +176,7 @@ export default function ProfileEditScreen() {
                 pointerEvents="none"
               />
             </TouchableOpacity>
-            <DatePicker
+            {/* <DatePicker
               modal
               open={dobPickerOpen}
               date={dobDate || (dob ? new Date(dob) : new Date())}
@@ -192,7 +192,7 @@ export default function ProfileEditScreen() {
                 setDob(`${yyyy}-${mm}-${dd}`);
               }}
               onCancel={() => setDobPickerOpen(false)}
-            />
+            /> */}
             <Dropdown
               style={styles.dropdown}
               data={genderOptions}
