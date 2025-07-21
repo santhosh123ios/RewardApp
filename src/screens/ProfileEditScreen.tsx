@@ -7,7 +7,7 @@ import ApiService from '../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
 import { Dropdown } from 'react-native-element-dropdown';
 import ImageCropPicker from 'react-native-image-crop-picker';
-//import DatePicker from 'react-native-date-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthContext } from '../context/AuthContext';
 
 export default function ProfileEditScreen() {
@@ -16,8 +16,8 @@ export default function ProfileEditScreen() {
   // State for all fields
   const [profileImg, setProfileImg] = React.useState(require('../../assets/dummy.jpg'));
   const [dob, setDob] = React.useState('');
-  const [dobPickerOpen, setDobPickerOpen] = React.useState(false);
-  const [dobDate, setDobDate] = React.useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  const [dobDate, setDobDate] = React.useState<Date>(new Date());
   const [gender, setGender] = React.useState('');
   const [job, setJob] = React.useState('');
   const [address, setAddress] = React.useState('');
@@ -48,7 +48,7 @@ export default function ProfileEditScreen() {
         setProfileImg(data.profile_img ? { uri: 'https://crmgcc.net/uploads/' + data.profile_img } : require('../../assets/dummy.jpg'));
         setPassword(data.password || '');
         setDob(data.dob || '');
-        setDobDate(data.dob ? new Date(data.dob) : null);
+        setDobDate(data.dob ? new Date(data.dob) : new Date());
         setGender(data.gender === 0 ? 'Male' : data.gender === 1 ? 'Female' : '');
         setAddress(data.address || '');
         setJob(data.job || '');
@@ -169,32 +169,35 @@ export default function ProfileEditScreen() {
             </View>
             {/* 2. Personal Details */}
             <Text style={styles.sectionTitle}>Personal Details</Text>
-            <TouchableOpacity onPress={() => setDobPickerOpen(true)}>
-              <TextInput
-                style={styles.input}
-                placeholder="Date of Birth"
-                value={dob}
-                editable={false}
-                pointerEvents="none"
-              />
-            </TouchableOpacity>
-            {/* <DatePicker
-              modal
-              open={dobPickerOpen}
-              date={dobDate || (dob ? new Date(dob) : new Date())}
-              mode="date"
-              maximumDate={new Date()}
-              onConfirm={(date: Date) => {
-                setDobPickerOpen(false);
-                setDobDate(date);
-                // Format as YYYY-MM-DD
-                const yyyy = date.getFullYear();
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const dd = String(date.getDate()).padStart(2, '0');
-                setDob(`${yyyy}-${mm}-${dd}`);
-              }}
-              onCancel={() => setDobPickerOpen(false)}
-            /> */}
+            <View style={styles.inputWrapper}>
+              <View style={styles.dobRow}>
+                <Text style={styles.inputLabel}>Date of Birth</Text>
+                <TouchableOpacity
+                  style={styles.dobButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={styles.dobButtonText}>{dob ? dob : 'Select Date'}</Text>
+                </TouchableOpacity>
+              </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dobDate}
+                  mode="date"
+                  display="default"
+                  maximumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (event.type === 'set' && selectedDate) {
+                      setDobDate(selectedDate);
+                      const yyyy = selectedDate.getFullYear();
+                      const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                      const dd = String(selectedDate.getDate()).padStart(2, '0');
+                      setDob(`${yyyy}-${mm}-${dd}`);
+                    }
+                  }}
+                />
+              )}
+            </View>
             <Dropdown
               style={styles.dropdown}
               data={genderOptions}
@@ -327,7 +330,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   input: {
     borderWidth: 1,
@@ -380,5 +383,41 @@ const styles = StyleSheet.create({
     height: 48,
     backgroundColor: 'transparent',
     color: '#222',
+  },
+  inputLabel: { 
+    fontSize: 15, 
+    color: '#222', 
+    marginLeft: 12, 
+    fontWeight: '500' 
+  },
+  inputFullWidth: { 
+    width: '100%', 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 8, 
+    backgroundColor: '#fff', 
+    marginBottom: 20 },
+
+  dobRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 8, 
+    backgroundColor: '#fff', 
+    marginBottom: 20, 
+    paddingHorizontal: 0, 
+    justifyContent: 'space-between' 
+  },
+  dobButton: { 
+    paddingVertical: 10, 
+    paddingHorizontal: 16, 
+    backgroundColor: colors.primary, 
+    borderRadius: 6 
+  },
+  dobButtonText: { 
+    color: '#fff', 
+    fontWeight: 'bold', 
+    fontSize: 15 
   },
 }); 
