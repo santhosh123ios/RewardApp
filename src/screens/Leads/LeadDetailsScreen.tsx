@@ -105,7 +105,7 @@ const LeadDetailsScreen = () => {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={10} // Try 0, or adjust as needed
+        keyboardVerticalOffset={0} // Try 0, or adjust as needed
       >
         <View style={styles.chatContainer}>
           <ScrollView
@@ -160,11 +160,11 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
-    marginTop: 20,
+    padding: 10,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    backgroundColor: '#fffff',
+    backgroundColor: colors.white,
+    justifyContent: 'center',
     
   },
   input: {
@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
     marginBottom: 10,
+    margin: 16,
   },
   leadImage: {
     width: 80,
