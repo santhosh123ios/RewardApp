@@ -51,13 +51,7 @@ export default function ProfileScreen() {
   };
 
   const handleProfile = async () => {
-    try {
-      await AsyncStorage.removeItem('auth_token');
-      // await AsyncStorage.removeItem('isLoggedIn');
-      // setLoggedIn(false); // This will trigger the app to show the Login screen
-    } catch (e) {
-      Alert.alert('Error', 'Failed to logout.');
-    }
+    
   };
 
   let profileImgSrc = dummyImg;

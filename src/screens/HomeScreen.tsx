@@ -45,15 +45,28 @@ export default function HomeScreen() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingProd, setLoadingProd] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
   
 
   useEffect(() => {
-    fetchOffers();
-    fetchProducts();
-}, []);
+    if (activeTab === 'Offers') {
+      fetchOffers();
+    } else if (activeTab === 'Products') {
+      fetchProducts();
+    }
+  }, [activeTab]);
+
+  // Refresh API data when switching tabs
+  useEffect(() => {
+    if (activeTab === 'Offers') {
+      fetchOffers();
+    } else if (activeTab === 'Products') {
+      fetchProducts();
+    }
+  }, [activeTab]);
 
 // const fetchOffers = async () => {
 //   try {
@@ -155,6 +168,17 @@ const renderCardProduct = ({ item }: { item: ProductItem }) => (
   </TouchableOpacity>
 );
 
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (activeTab === 'Offers') {
+      await fetchOffers();
+    } else if (activeTab === 'Products') {
+      await fetchProducts();
+    }
+    setRefreshing(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeContainer}>
       {/* Tab selector */}
@@ -177,33 +201,36 @@ const renderCardProduct = ({ item }: { item: ProductItem }) => (
           </View>
         </View>
 
+      {/* Loader below the tab bar */}
+      {((activeTab === 'Offers' && loading && !refreshing) || (activeTab === 'Products' && loadingProd && !refreshing)) && (
+        <View style={{ justifyContent: 'center', alignItems: 'center', minHeight: 60 }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      )}
+
       {/* Offers Grid */}
       {activeTab === 'Offers' && (
-        loading ? (
-          <ActivityIndicator size="large" color="#f8d307" />
-        ) : (
-          <FlatList
-            data={offers}
-            renderItem={renderCard}
-            keyExtractor={item => item.id.toString()}
-            numColumns={2}
-            contentContainerStyle={styles.grid}
-          />
-        )
+        <FlatList
+          data={offers}
+          renderItem={renderCard}
+          keyExtractor={item => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.grid}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
       )}
 
       {activeTab === 'Products' && (
-       loadingProd ? (
-          <ActivityIndicator size="large" color="#f8d307" />
-        ) : (
-          <FlatList
-            data={products}
-            renderItem={renderCardProduct}
-            keyExtractor={item => item.id.toString()}
-            numColumns={2}
-            contentContainerStyle={styles.grid}
-          />
-        )
+        <FlatList
+          data={products}
+          renderItem={renderCardProduct}
+          keyExtractor={item => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.grid}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
       )}
     </SafeAreaView>
   );

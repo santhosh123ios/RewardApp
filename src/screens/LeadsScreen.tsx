@@ -1,4 +1,4 @@
-import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from "react-native";
 import colors from "../theme/colors";
 import { useEffect, useState, useContext } from "react";
 import ApiService from "../services/ApiService";
@@ -31,6 +31,8 @@ type RootStackParamList = {
 
 export default function LeadsScreen() {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
   const { logout } = useContext(AuthContext);
@@ -51,6 +53,7 @@ export default function LeadsScreen() {
 
   useEffect(() => {
     if (isFocused) {
+      setLoading(true);
       fetchLeads();
     }
   }, [isFocused]);
@@ -61,6 +64,14 @@ export default function LeadsScreen() {
     if (json?.result?.status === 1) {
       setLeads(json.result.data);
     }
+    setLoading(false);
+  };
+
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeads();
+    setRefreshing(false);
   };
 
   const statusMap: { [key: string]: { color: string; text: string } } = {
@@ -103,13 +114,20 @@ export default function LeadsScreen() {
     <SafeAreaView style={styles.safeContainer}>
       
       <View style={{  backgroundColor: '#fff' }}>
-        
-        <FlatList
-          data={leads}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
-        />
+        {loading && !refreshing ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={leads}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ padding: 16 }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        )}
       </View>
       <TouchableOpacity
         style={styles.fab}
