@@ -17,6 +17,8 @@ import ProductdetailsScreen from './src/screens/Home/ProductdetailsScreen';
 import CreateLeadScreen from './src/screens/Leads/CreateLeadScreen';
 import LeadDetailsScreen from './src/screens/Leads/LeadDetailsScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
+import ComplaintsScreen from './src/screens/Complaints/ComplaintsScreen';
+import ComplaintCreateScreen from './src/screens/Complaints/ComplaintCreateScreen';
 
 function AppContent() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -45,6 +47,10 @@ function AppContent() {
         <Stack.Screen name="CreateLead" component={CreateLeadScreen}/>
         <Stack.Screen name="LeadDetails" component={LeadDetailsScreen}/>
         <Stack.Screen name="ProfileEdit" component={ProfileEditScreen}/>
+        <Stack.Screen name="Complaints" component={ComplaintsScreen}/>
+        <Stack.Screen name="ComplaintCreate" component={ComplaintCreateScreen}/>
+        
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

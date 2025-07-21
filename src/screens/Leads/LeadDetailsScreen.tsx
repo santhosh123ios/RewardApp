@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
@@ -102,38 +102,44 @@ const LeadDetailsScreen = () => {
         </View>
       </View>
       {/* Chat section */}
-      <View style={styles.chatContainer}>
-        <ScrollView
-          style={styles.messagesContainer}
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          ref={scrollViewRef}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-        >
-          {messages.map(msg => (
-            <View
-              key={msg.id}
-              style={[
-                styles.messageBubble,
-                msg.sender === 'me' ? styles.myMessage : styles.otherMessage,
-              ]}
-            >
-              <Text style={styles.messageText}>{msg.text}</Text>
-            </View>
-          ))}
-        </ScrollView>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message"
-            value={input}
-            onChangeText={setInput}
-            multiline
-          />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-            <Icon name="send" size={18} color="#fff" />
-          </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={10} // Try 0, or adjust as needed
+      >
+        <View style={styles.chatContainer}>
+          <ScrollView
+            style={styles.messagesContainer}
+            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+            ref={scrollViewRef}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map(msg => (
+              <View
+                key={msg.id}
+                style={[
+                  styles.messageBubble,
+                  msg.sender === 'me' ? styles.myMessage : styles.otherMessage,
+                ]}
+              >
+                <Text style={styles.messageText}>{msg.text}</Text>
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message"
+              value={input}
+              onChangeText={setInput}
+              multiline
+            />
+            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+              <Icon name="send" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

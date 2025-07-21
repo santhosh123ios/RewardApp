@@ -80,13 +80,22 @@ const globalStyles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 16,
+    padding: 0,
     },
     
     header: {
-    flexDirection: 'row',
+      // flexDirection: 'row',
+      // alignItems: 'center',
+      // marginBottom: 16,
+      flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
     },
     headerTitle: {
     fontSize: 18,
