@@ -82,7 +82,7 @@ const VendorsScreen = () => {
             style={styles.iconBtn}
             onPress={(e) => {
               e.stopPropagation();
-              navigation.navigate('VendorDetails', { vendor: item, defaultTab: 'Transaction' });
+              navigation.navigate('VendorDetails', { vendor: item, defaultTab: 'Trans' });
             }}
           >
             <Icon name="card" size={20} color="#f8d307" />

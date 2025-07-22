@@ -6,10 +6,19 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import globalStyles from '../../theme/globalStyles';
 import ApiService from '../../services/ApiService';
 import { AuthContext } from '../../context/AuthContext';
+import colors from '../../theme/colors';
 
 const windowWidth = Dimensions.get('window').width;
-const tabs = ['Offer', 'Product', 'Transaction'];
+const tabs = ['Offer', 'Product', 'Trans', 'Leads'];
 const dummyImg = require('../../../assets/dummy.jpg');
+
+const statusMap = {
+  '0': { color: 'orange', text: 'PENDING' },
+  '1': { color: 'yellow', text: 'REVIEW' },
+  '2': { color: 'paleturquoise', text: 'Processing' },
+  '3': { color: 'green', text: 'DONE' },
+  '4': { color: 'red', text: 'REJECTED' },
+};
 
 const VendorDetailsScreen = () => {
   const navigation = useNavigation();
@@ -22,6 +31,7 @@ const VendorDetailsScreen = () => {
   const [offers, setOffers] = useState([]);
   const [products, setProducts] = useState([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,8 +39,10 @@ const VendorDetailsScreen = () => {
       fetchOffers();
     } else if (activeTab === 'Product') {
       fetchProducts();
-    } else if (activeTab === 'Transaction') {
+    } else if (activeTab === 'Trans') {
       fetchTransactions();
+    } else if (activeTab === 'Leads') {
+      fetchLeads();
     }
   }, [activeTab]);
 
@@ -79,6 +91,21 @@ const VendorDetailsScreen = () => {
     setLoading(false);
   };
 
+  const fetchLeads = async () => {
+    setLoading(true);
+    try {
+      const json = await ApiService('member/getleads', 'GET', null, logout);
+      if (json?.result?.status === 1) {
+        setLeads(json.result.data.filter((item: any) => String(item.vendor_id) === String(vendor.id)));
+      } else {
+        setLeads([]);
+      }
+    } catch (e) {
+      setLeads([]);
+    }
+    setLoading(false);
+  };
+
   function formatDate(dateString: string) {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -94,26 +121,32 @@ const VendorDetailsScreen = () => {
 
   const renderOffer = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.85}
       onPress={() => navigation.navigate('OfferDetails', { offer: item })}
+      style={styles.card}
+      activeOpacity={0.8}
     >
-      <Image source={{ uri: `https://crmgcc.net/uploads/${item.image}` }} style={styles.image} />
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+      <Image
+        source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
+        style={styles.image}
+      />
+      <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+      <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
       <Text style={styles.discount}>Discount: {item.discount}%</Text>
     </TouchableOpacity>
   );
 
   const renderProduct = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.85}
       onPress={() => navigation.navigate('ProductDetails', { product: item })}
+      style={styles.card}
+      activeOpacity={0.8}
     >
-      <Image source={{ uri: `https://crmgcc.net/uploads/${item.image}` }} style={styles.image} />
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.description}>{item.description}</Text>
+      <Image
+        source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
+        style={styles.image}
+      />
+      <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+      <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
       <View style={styles.priceView}>
         <Text style={styles.priceLable}>Price: </Text>
         <Text style={styles.offerPrice}>{item.offer_price}</Text>
@@ -122,7 +155,7 @@ const VendorDetailsScreen = () => {
     </TouchableOpacity>
   );
 
-  const renderTransaction = ({ item, index }: { item: any, index: number }) => (
+  const renderTransaction = ({ item }: { item: any }) => (
     <View style={styles.listItem}>
       <View>
         <Text style={styles.itemLabel}>{item.transaction_title}</Text>
@@ -133,6 +166,30 @@ const VendorDetailsScreen = () => {
         {item.transaction_cr > 0 ? '+' : '-'}{(item.transaction_cr > 0 ? item.transaction_cr : item.transaction_dr)?.toFixed(2) ?? '0'}
       </Text>
     </View>
+  );
+
+  const renderLead = ({ item }: { item: any }) => (
+    <TouchableOpacity onPress={() => navigation.navigate('LeadDetails', { lead: item })}>
+      <View style={styles.leadItem}>
+        <Image
+          source={item.vendor_image ? { uri: 'https://crmgcc.net/uploads/' + item.vendor_image } : dummyImg}
+          style={styles.leadImage}
+        />
+        <View style={styles.leadInfo}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.leadTitle}>{item.lead_name}</Text>
+          </View>
+          <Text style={styles.leadDescription}>{item.lead_description}</Text>
+          <Text style={styles.leadDatetime}>{formatDate(item.created_at)}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[styles.statusText, { color: statusMap[item.lead_status]?.color || 'gray' }]}> 
+            {statusMap[item.lead_status]?.text || 'UNKNOWN'}
+          </Text>
+          <View style={[styles.statusDot, { backgroundColor: statusMap[item.lead_status]?.color || 'gray' }]} />
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 
   // Debug: log transactions
@@ -183,9 +240,9 @@ const VendorDetailsScreen = () => {
             renderItem={renderOffer}
             keyExtractor={item => item.id.toString()}
             numColumns={2}
-            key={'offers'} // <-- Add a unique key for this layout
             contentContainerStyle={styles.grid}
             ListEmptyComponent={<Text style={styles.placeholder}>No offers found.</Text>}
+            key={'offers'}
           />
         ) : activeTab === 'Product' ? (
           <FlatList
@@ -193,19 +250,27 @@ const VendorDetailsScreen = () => {
             renderItem={renderProduct}
             keyExtractor={item => item.id.toString()}
             numColumns={2}
-            key={'products'} // <-- Add a unique key for this layout
             contentContainerStyle={styles.grid}
             ListEmptyComponent={<Text style={styles.placeholder}>No products found.</Text>}
+            key={'products'}
           />
-        ) : (
+        ) : activeTab === 'Trans' ? (
           <FlatList
             data={transactions}
             renderItem={renderTransaction}
             keyExtractor={(item, index) => (item.transaction_id ? String(item.transaction_id) : String(index))}
-            numColumns={1}
-            key={'transactions'} // <-- Add a unique key for this layout
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={<Text style={styles.placeholder}>No transactions found.</Text>}
+            key={'trans'}
+          />
+        ) : (
+          <FlatList
+            data={leads}
+            renderItem={renderLead}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.grid}
+            ListEmptyComponent={<Text style={styles.placeholder}>No leads found.</Text>}
+            key={'leads'}
           />
         )}
       </View>
@@ -328,19 +393,19 @@ const styles = StyleSheet.create({
   },
   priceLable: {
     fontSize: 12,
-    color: '#888',
+    color: colors.label,
     marginTop: 4,
     fontWeight: 'bold',
   },
   offerPrice: {
     fontSize: 12,
-    color: '#4caf50',
+    color: colors.green,
     marginTop: 4,
     fontWeight: 'bold',
   },
   price: {
     fontSize: 12,
-    color: '#d0021b',
+    color: colors.text,
     marginTop: 4,
     fontWeight: 'bold',
     marginLeft: 5,
@@ -391,6 +456,56 @@ const styles = StyleSheet.create({
   itemAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  leadItem: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 14,
+    alignItems: 'flex-start',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  leadImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 15,
+  },
+  leadInfo: {
+    flex: 1,
+  },
+  leadTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+    color: '#222',
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'green',
+    marginLeft: 6,
+  },
+  statusText: {
+    fontSize: 13,
+    color: 'green',
+    fontWeight: '500',
+  },
+  leadDescription: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 2,
+  },
+  leadDatetime: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
   },
 });
 
