@@ -75,23 +75,25 @@ const ComplaintsScreen = () => {
   };
 
   const renderItem = ({ item }: { item: Complaint }) => (
-    <View style={styles.complaintItem}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text
-          style={styles.subject}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {item.subject}
-        </Text>
-        <Text style={[styles.status, { color: statusMap[item.status]?.color || 'gray' }]}>{statusMap[item.status]?.text || 'Unknown'}</Text>
+    <TouchableOpacity onPress={() => navigation.navigate('ComplaintDetails', { complaint: item })}>
+      <View style={styles.complaintItem}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text
+            style={styles.subject}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.subject}
+          </Text>
+          <Text style={[styles.status, { color: statusMap[item.status]?.color || 'gray' }]}>{statusMap[item.status]?.text || 'Unknown'}</Text>
+        </View>
+        <Text style={styles.message}>{item.message}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.meta}>ID: {item.id}</Text>
+          <Text style={styles.meta}>{formatDate(item.created_at)}</Text>
+        </View>
       </View>
-      <Text style={styles.message}>{item.message}</Text>
-      <View style={styles.metaRow}>
-        <Text style={styles.meta}>ID: {item.id}</Text>
-        <Text style={styles.meta}>{formatDate(item.created_at)}</Text>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

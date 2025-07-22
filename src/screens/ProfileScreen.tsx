@@ -79,7 +79,7 @@ export default function ProfileScreen() {
       </View>
       {/* Menu Options */}
       <View style={styles.menuSection}>
-        <MenuButton icon="business-outline" label="Vendor" onPress={() => {}} color="#222" />
+        <MenuButton icon="business-outline" label="Vendor" onPress={() => navigation.navigate('Vendors')} color="#222" />
         <MenuButton icon="document-text-outline" label="Report" onPress={handleProfile} color="#222" />
         <MenuButton icon="alert-circle-outline" label="Complaints" onPress={() => navigation.navigate('Complaints')} color="#222" />
         <MenuButton icon="log-out-outline" label="Logout" onPress={handleLogout} color={colors.red || '#d0021b'} />
