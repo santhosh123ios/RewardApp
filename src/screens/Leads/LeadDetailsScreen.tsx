@@ -1,131 +1,131 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import colors from '../../theme/colors';
-import globalStyles from '../../theme/globalStyles';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image, SafeAreaView } from 'react-native';
+import ApiService from '../../services/ApiService';
 import Icon from 'react-native-vector-icons/Ionicons';
+import globalStyles from '../../theme/globalStyles';
 import { useNavigation } from '@react-navigation/native';
-import { useState, useRef } from 'react';
 
-// Define the Lead type (should match LeadsScreen)
-type Lead = {
-  id: string;
-  vendor_image: string;
-  lead_name: string;
-  lead_description: string;
-  created_at: string;
-  lead_status: string;
-};
-
-type RootStackParamList = {
-  LeadDetails: { lead: Lead };
-};
-
-type LeadDetailsRouteProp = RouteProp<RootStackParamList, 'LeadDetails'>;
-
-function formatDate(dateString: string) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const day = date.getDate();
-  const month = date.toLocaleString('default', { month: 'short' });
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  hours = hours % 12 || 12;
-  return `${day} ${month} ${year} ${hours}:${minutes} ${ampm}`;
-}
-
-// Add statusMap for status color and text
-const statusMap: { [key: string]: { color: string; text: string } } = {
-  '0': { color: 'orange', text: 'PENDING' },
-  '1': { color: 'yellow', text: 'REVIEW' },
-  '2': { color: 'paleturquoise', text: 'Processing' },
-  '3': { color: 'green', text: 'DONE' },
-  '4': { color: 'red', text: 'REJECTED' },
-};
-
-const LeadDetailsScreen = () => {
+const LeadDetailsScreen = ({ route }) => {
   const navigation = useNavigation();
-  const route = useRoute<LeadDetailsRouteProp>();
   const { lead } = route.params;
-
-  // Chat state
-  const [messages, setMessages] = useState<Array<{ id: string; text: string; sender: 'me' | 'other' }>>([
-    // Example initial message
-     { id: '1', text: 'Welcome to the chat!', sender: 'other' },
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef(null);
 
-  const handleSend = () => {
+  useEffect(() => {
+    fetchMessages(lead.id);
+  }, [lead.id]);
+
+  const fetchMessages = async (leadId) => {
+    setLoading(true);
+    try {
+      const json = await ApiService('member/get_lead_message', 'POST', { lead_id: leadId });
+      if (json?.result?.status === 1) {
+        setMessages(json.result.data);
+      } else {
+        setMessages([]);
+      }
+    } catch (e) {
+      setMessages([]);
+    }
+    setLoading(false);
+  };
+
+  // Dummy send handler (does not send to API)
+  const handleSend = async () => {
     if (input.trim()) {
-      setMessages(prev => [
-        ...prev,
-        { id: Date.now().toString(), text: input, sender: 'me' },
-      ]);
-      setInput('');
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      const newMessage = {
+        text: input,
+        lead_id: lead.id,
+      };
+      try {
+        const json = await ApiService('member/create_lead_message', 'POST', newMessage);
+        if (json?.result?.status === 1) {
+          setInput('');
+          fetchMessages(lead.id); // Refresh messages from server
+        } else {
+          // Optionally show an error
+          alert(json?.result?.message || 'Failed to send message');
+        }
+      } catch (e) {
+        alert('Failed to send message');
+      }
     }
   };
 
+  // Helper to determine if the message is from 'me' or 'other'
+  const getSenderType = (msg) => {
+    // Replace 40 with the current user id if available
+    return msg.sender === 40 ? 'me' : 'other';
+  };
+
+  const statusMap = {
+    '0': { color: 'orange', text: 'PENDING' },
+    '1': { color: 'yellow', text: 'REVIEW' },
+    '2': { color: 'paleturquoise', text: 'Processing' },
+    '3': { color: 'green', text: 'DONE' },
+    '4': { color: 'red', text: 'REJECTED' },
+  };
+
   return (
-    <SafeAreaView style={globalStyles.safeContainer}>
-      <View style={globalStyles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={globalStyles.headerTitle}>Lead Details</Text>
-      </View>
-      <View style={styles.leadItem}>
-        <Image
-          source={
-            lead.vendor_image
-              ? { uri: 'https://crmgcc.net/uploads/' + lead.vendor_image }
-              : require('../../../assets/dummy.jpg')
-          }
-          style={styles.leadImage}
-        />
-        <View style={styles.leadInfo}>
-          <Text style={styles.leadTitle}>{lead.lead_name}</Text>
-          <Text style={styles.leadDescription}>{lead.lead_description}</Text>
-          <Text style={styles.leadDatetime}>{formatDate(lead.created_at)}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-          <Text style={[styles.statusText, { color: statusMap[lead.lead_status]?.color || 'gray' }]}> 
-            {statusMap[lead.lead_status]?.text || 'UNKNOWN'}
-          </Text>
-          <View style={[styles.statusDot, { backgroundColor: statusMap[lead.lead_status]?.color || 'gray' }]} />
-        </View>
-      </View>
-      {/* Chat section */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0} // Try 0, or adjust as needed
-      >
-        <View style={styles.chatContainer}>
-          <ScrollView
-            style={styles.messagesContainer}
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-            ref={scrollViewRef}
-            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-          >
-            {messages.map(msg => (
-              <View
-                key={msg.id}
-                style={[
-                  styles.messageBubble,
-                  msg.sender === 'me' ? styles.myMessage : styles.otherMessage,
-                ]}
-              >
-                <Text style={styles.messageText}>{msg.text}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={globalStyles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={globalStyles.headerTitle}>Lead Details</Text>
+          </View>
+          {/* Lead Details Card */}
+          <View style={styles.leadItem}>
+            <View>
+              <Image
+                source={lead.vendor_image ? { uri: 'https://crmgcc.net/uploads/' + lead.vendor_image } : require('../../../assets/dummy.jpg')}
+                style={styles.leadImage}
+              />
+            </View>
+            <View style={styles.leadInfo}>
+              <Text style={styles.leadTitle}>{lead.lead_name}</Text>
+              <Text style={styles.leadDescription}>{lead.lead_description}</Text>
+              <Text style={styles.leadDatetime}>{new Date(lead.created_at).toLocaleString()}</Text>
+              <View style={styles.statusRow}>
+                <Text style={[styles.statusText, { color: statusMap[lead.lead_status]?.color || 'gray' }]}> 
+                  {statusMap[lead.lead_status]?.text || 'UNKNOWN'}
+                </Text>
+                <View style={[styles.statusDot, { backgroundColor: statusMap[lead.lead_status]?.color || 'gray' }]} />
               </View>
-            ))}
-          </ScrollView>
+            </View>
+          </View>
+          {/* Chat Section */}
+          {loading ? (
+            <ActivityIndicator size="large" />
+          ) : (
+            <ScrollView
+              style={styles.messagesContainer}
+              contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+              ref={scrollViewRef}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
+              {messages.map(msg => (
+                <View
+                  key={msg.id}
+                  style={[
+                    styles.messageBubble,
+                    getSenderType(msg) === 'me' ? styles.myMessage : styles.otherMessage,
+                  ]}
+                >
+                  <Text style={styles.messageText}>{msg.text}</Text>
+                  <Text style={styles.messageMeta}>
+                    {getSenderType(msg) === 'me' ? 'You' : 'Other'} | {new Date(msg.create_at).toLocaleString()}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+          {/* Input Row */}
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -145,27 +145,32 @@ const LeadDetailsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container: { flex: 1, backgroundColor: '#fff' },
+  messagesContainer: { flex: 1 },
+  messageBubble: {
+    maxWidth: '80%',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
   },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'flex-end',
+  myMessage: {
+    backgroundColor: '#DCF8C6',
+    alignSelf: 'flex-end',
   },
-  messagesContainer: {
-    flex: 1,
+  otherMessage: {
+    backgroundColor: '#eee',
+    alignSelf: 'flex-start',
   },
+  messageText: { fontSize: 16, color: '#222' },
+  messageMeta: { fontSize: 12, color: '#888', marginTop: 4 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    backgroundColor: colors.white,
+    backgroundColor: '#fff',
     justifyContent: 'center',
-    
   },
   input: {
     flex: 1,
@@ -188,27 +193,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  messageBubble: {
-    maxWidth: '80%',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 10,
-  },
-  myMessage: {
-    backgroundColor: '#DCF8C6',
-    alignSelf: 'flex-end',
-  },
-  otherMessage: {
-    backgroundColor: '#eee',
-    alignSelf: 'flex-start',
-  },
-  messageText: {
-    fontSize: 16,
-    color: '#222',
-  },
   leadItem: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
+    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 20,
     alignItems: 'flex-start',
@@ -245,17 +232,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  statusText: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginRight: 8,
+  },
   statusDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: 'green',
-    marginLeft: 8,
-  },
-  statusText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: 'green',
+    marginLeft: 4,
   },
 });
 
