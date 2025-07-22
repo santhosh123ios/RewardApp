@@ -22,6 +22,7 @@ import ComplaintCreateScreen from './src/screens/Complaints/ComplaintCreateScree
 import ComplaintDetailsScreen from './src/screens/Complaints/ComplaintDetailsScreen';
 import VendorsScreen from './src/screens/Vendors/VendorsScreen';
 import VendorDetailsScreen from './src/screens/Vendors/VendorDetailsScreen';
+import ReportsScreen from './src/screens/Reports/ReportsScreen';
 
 function AppContent() {
   const isDarkMode = true; //useColorScheme() === 'dark';
@@ -65,6 +66,7 @@ function AppContent() {
         <Stack.Screen name="ComplaintDetails" component={ComplaintDetailsScreen}/>
         <Stack.Screen name="Vendors" component={VendorsScreen}/>
         <Stack.Screen name="VendorDetails" component={VendorDetailsScreen}/>
+        <Stack.Screen name="Reports" component={ReportsScreen}/>
         
         
       </Stack.Navigator>
