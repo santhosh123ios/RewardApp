@@ -5,6 +5,31 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import globalStyles from '../../theme/globalStyles';
 import { useNavigation } from '@react-navigation/native';
 
+function formatFriendlyDateTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  let dayPart = '';
+  if (isToday) {
+    dayPart = 'Today';
+  } else if (isYesterday) {
+    dayPart = 'Yesterday';
+  } else {
+    dayPart = date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
+
+  return `${dayPart}, ${hours}:${minutes} ${ampm}`;
+}
+
 const LeadDetailsScreen = ({ route }) => {
   const navigation = useNavigation();
   const { lead } = route.params;
@@ -68,6 +93,7 @@ const LeadDetailsScreen = ({ route }) => {
     '4': { color: 'red', text: 'REJECTED' },
   };
 
+  let lastDate = '';
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -109,20 +135,37 @@ const LeadDetailsScreen = ({ route }) => {
               ref={scrollViewRef}
               onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
             >
-              {messages.map(msg => (
-                <View
-                  key={msg.id}
-                  style={[
-                    styles.messageBubble,
-                    getSenderType(msg) === 'me' ? styles.myMessage : styles.otherMessage,
-                  ]}
-                >
-                  <Text style={styles.messageText}>{msg.text}</Text>
-                  <Text style={styles.messageMeta}>
-                    {getSenderType(msg) === 'me' ? 'You' : 'Other'} | {new Date(msg.create_at).toLocaleString()}
-                  </Text>
-                </View>
-              ))}
+              {messages.map((msg, idx) => {
+                const msgDate = new Date(msg.create_at);
+                const dateKey = msgDate.toDateString();
+                let showDate = false;
+                if (dateKey !== lastDate) {
+                  showDate = true;
+                  lastDate = dateKey;
+                }
+                return (
+                  <React.Fragment key={msg.id}>
+                    {showDate && (
+                      <View style={styles.dateSeparator}>
+                        <Text style={styles.dateSeparatorText}>
+                          {formatFriendlyDateTime(msg.create_at).split(',')[0]}
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.messageBubble,
+                        getSenderType(msg) === 'me' ? styles.myMessage : styles.otherMessage,
+                      ]}
+                    >
+                      <Text style={styles.messageText}>{msg.text}</Text>
+                      <Text style={styles.messageMeta}>
+                        {formatFriendlyDateTime(msg.create_at).split(',')[1]?.trim()}
+                      </Text>
+                    </View>
+                  </React.Fragment>
+                );
+              })}
             </ScrollView>
           )}
           {/* Input Row */}
@@ -248,6 +291,21 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'green',
     marginLeft: 4,
+  },
+  dateSeparator: {
+    alignItems: 'center',
+    marginVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  dateSeparatorText: {
+    color: '#555',
+    fontSize: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
 });
 
