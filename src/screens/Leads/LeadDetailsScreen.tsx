@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Image, SafeAreaView, FlatList } from 'react-native';
 import ApiService from '../../services/ApiService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import globalStyles from '../../theme/globalStyles';
@@ -36,11 +36,32 @@ const LeadDetailsScreen = ({ route }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false); // Re-add sending state for disabling button
   const scrollViewRef = useRef(null);
 
   useEffect(() => {
     fetchMessages(lead.id);
   }, [lead.id]);
+
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (!loading && scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100); // 100ms is usually enough
+    }
+  }, [loading, messages]);
 
   const fetchMessages = async (leadId) => {
     setLoading(true);
@@ -59,23 +80,25 @@ const LeadDetailsScreen = ({ route }) => {
 
   // Dummy send handler (does not send to API)
   const handleSend = async () => {
-    if (input.trim()) {
+    if (!input.trim()) return;
+    setSending(true);
+    try {
       const newMessage = {
         text: input,
         lead_id: lead.id,
       };
-      try {
-        const json = await ApiService('member/create_lead_message', 'POST', newMessage);
-        if (json?.result?.status === 1) {
-          setInput('');
-          fetchMessages(lead.id); // Refresh messages from server
-        } else {
-          // Optionally show an error
-          alert(json?.result?.message || 'Failed to send message');
-        }
-      } catch (e) {
-        alert('Failed to send message');
+      const json = await ApiService('member/create_lead_message', 'POST', newMessage);
+      if (json?.result?.status === 1) {
+        setInput('');
+        fetchMessages(lead.id); // Refresh messages from server
+      } else {
+        // Optionally show an error
+        alert(json?.result?.message || 'Failed to send message');
       }
+    } catch (e) {
+      alert('Failed to send message');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -95,9 +118,9 @@ const LeadDetailsScreen = ({ route }) => {
 
   let lastDate = '';
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={{ flex: 1 }}>
           {/* Header */}
           <View style={globalStyles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -126,16 +149,13 @@ const LeadDetailsScreen = ({ route }) => {
             </View>
           </View>
           {/* Chat Section */}
-          {loading ? (
-            <ActivityIndicator size="large" />
-          ) : (
-            <ScrollView
-              style={styles.messagesContainer}
-              contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-              ref={scrollViewRef}
-              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-            >
-              {messages.map((msg, idx) => {
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            showsVerticalScrollIndicator={false}
+          >
+            {messages.map((msg, idx) => {
                 const msgDate = new Date(msg.create_at);
                 const dateKey = msgDate.toDateString();
                 let showDate = false;
@@ -165,9 +185,9 @@ const LeadDetailsScreen = ({ route }) => {
                     </View>
                   </React.Fragment>
                 );
-              })}
-            </ScrollView>
-          )}
+              })
+            }
+          </ScrollView>
           {/* Input Row */}
           <View style={styles.inputRow}>
             <TextInput
@@ -177,7 +197,7 @@ const LeadDetailsScreen = ({ route }) => {
               onChangeText={setInput}
               multiline
             />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+            <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
               <Icon name="send" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -189,7 +209,7 @@ const LeadDetailsScreen = ({ route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  messagesContainer: { flex: 1 },
+  messagesContainer: { flex: 1, paddingRight: 16, paddingLeft: 16},
   messageBubble: {
     maxWidth: '80%',
     borderRadius: 16,

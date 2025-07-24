@@ -6,8 +6,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
-import DocumentPicker from 'react-native-document-picker';
-import type { DocumentPickerResponse } from 'react-native-document-picker';
+import { launchImageLibrary, Asset, ImageLibraryOptions } from 'react-native-image-picker';
 import { AuthContext } from '../../context/AuthContext';
 
 function getTruncatedFileName(name: string, maxLength = 24) {
@@ -29,7 +28,7 @@ const CreateLeadScreen = () => {
     const [selectedVendor, setSelectedVendor] = useState<string>('');
     const [leadName, setLeadName] = useState('');
     const [description, setDescription] = useState('');
-    const [file, setFile] = useState<DocumentPickerResponse | null>(null);
+    const [file, setFile] = useState<Asset | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -58,31 +57,36 @@ const CreateLeadScreen = () => {
     }, []);
 
     const handleFileAttach = async () => {
-        try {
-            const res = await DocumentPicker.pickSingle({
-                type: DocumentPicker.types.allFiles,
-            });
-            setFile(res);
-            setUploading(true);
-            setUploadSuccess(false);
-            // Simulate upload
-            uploadFiles({
-                uri: res.uri,
-                type: res.type || 'application/octet-stream',
-                name: res.name || 'upload',
-            });
-        } catch (err: any) {
-            if (DocumentPicker.isCancel(err)) {
-                // User cancelled the picker
-            } else {
-                Alert.alert('File picker error', err.message || 'Unknown error');
+        const options: ImageLibraryOptions = {
+            mediaType: 'mixed', // images and videos
+            selectionLimit: 1,
+        };
+        launchImageLibrary(options, async (response) => {
+            if (response.didCancel) {
+                // User cancelled
+                return;
             }
-        }
+            if (response.errorCode) {
+                Alert.alert('Picker Error', response.errorMessage || 'Unknown error');
+                return;
+            }
+            if (response.assets && response.assets.length > 0) {
+                const asset = response.assets[0];
+                setFile(asset);
+                setUploading(true);
+                setUploadSuccess(false);
+                await uploadFiles({
+                    uri: asset.uri || '',
+                    type: asset.type || 'application/octet-stream',
+                    name: asset.fileName || 'upload',
+                });
+            }
+        });
     };
 
     const handleSubmit = async () => {
-        if (!selectedVendor || !leadName || !description || !uploadedFileName) {
-            Alert.alert('Error', 'Please fill all fields and upload a file.');
+        if (!selectedVendor || !leadName || !description) {
+            Alert.alert('Error', 'Please fill all required fields.');
             return;
         }
         setSubmitting(true);
@@ -91,7 +95,7 @@ const CreateLeadScreen = () => {
                 vendor_id: selectedVendor,
                 lead_name: leadName,
                 lead_description: description,
-                lead_file: uploadedFileName,
+                lead_file: uploadedFileName || '',
             };
 
             const json = await ApiService('member/create-leads', 'POST', payload, logout);
@@ -117,25 +121,23 @@ const CreateLeadScreen = () => {
             uri: file.uri,
             type: file.type || 'application/octet-stream',
             name: file.name || 'upload',
-        });
+        } as any);
 
         try {
             const json = await ApiService('member/upload', 'POST', formData, logout);
-            console.log('Upload response:', json);
             setUploading(false);
             if (json?.success) {
                 setUploadedFileName(json?.filename);
                 setUploadSuccess(true);
-                
                 //Alert.alert('Success', 'File uploaded successfully!');
             } else {
                 setUploadSuccess(false);
-                //Alert.alert('Upload failed', json?.message || 'Unknown error');
+                Alert.alert('Upload failed', json?.message || 'Unknown error');
             }
-        } catch (err: unknown) {
+        } catch (err: any) {
             setUploading(false);
             setUploadSuccess(false);
-            Alert.alert('Upload error', (err as Error).message || 'Unknown error');
+            Alert.alert('Upload error', err.message || 'Unknown error');
         }
     };
 
@@ -181,16 +183,16 @@ const CreateLeadScreen = () => {
                     multiline
                 />
                 {/* File Attach */}
-                <Text style={styles.label}>Attach File</Text>
+                <Text style={styles.label}>Attach File (Image/Video)</Text>
                 <TouchableOpacity style={styles.attachButton} onPress={handleFileAttach} disabled={uploading}>
                     <Icon name="attach" size={20} color="#555" />
                     <Text style={styles.attachButtonText} numberOfLines={1}>
-                        {file ? getTruncatedFileName(file.name) : 'Attach File'}
+                        {file ? getTruncatedFileName(file.fileName || file.uri || '') : 'Attach File'}
                     </Text>
-                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    <View style={{ flex: 1, alignItems: 'flex-end'}}>
                         {uploading && <ActivityIndicator size="small" color="#f8d307" style={{ marginLeft: 8 }} />}
                         {uploadSuccess && !uploading && (
-                            <Icon name="checkmark-circle" size={22} color="green" style={{ marginLeft: 8 }} />
+                            <Icon name="checkmark-circle" size={23} color= "green" style={{}} />
                         )}
                     </View>
                 </TouchableOpacity>
@@ -246,8 +248,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     picker: {
-        height: Platform.OS === 'ios' ? 180 : 48,
+        height: Platform.OS === 'ios' ? 180 : 49,
         width: '100%',
+        alignItems: 'center',
     },
     attachButton: {
         flexDirection: 'row',

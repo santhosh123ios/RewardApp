@@ -6,8 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import globalStyles from '../../theme/globalStyles';
 import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
-import DocumentPicker from 'react-native-document-picker';
-import type { DocumentPickerResponse } from 'react-native-document-picker';
+import { launchImageLibrary, Asset, ImageLibraryOptions } from 'react-native-image-picker';
 import { AuthContext } from '../../context/AuthContext';
 
 function getTruncatedFileName(name: string, maxLength = 24) {
@@ -27,7 +26,7 @@ const ComplaintCreateScreen = () => {
   const [selectedVendor, setSelectedVendor] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [file, setFile] = useState<DocumentPickerResponse | null>(null);
+  const [file, setFile] = useState<Asset | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -50,25 +49,31 @@ const ComplaintCreateScreen = () => {
   }, []);
 
   const handleFileAttach = async () => {
-    try {
-      const res = await DocumentPicker.pickSingle({
-        type: DocumentPicker.types.allFiles,
-      });
-      setFile(res);
-      setUploading(true);
-      setUploadSuccess(false);
-      uploadFiles({
-        uri: res.uri,
-        type: res.type || 'application/octet-stream',
-        name: res.name || 'upload',
-      });
-    } catch (err: any) {
-      if (DocumentPicker.isCancel(err)) {
-        // User cancelled the picker
-      } else {
-        Alert.alert('File picker error', err.message || 'Unknown error');
+    const options: ImageLibraryOptions = {
+      mediaType: 'mixed', // images and videos
+      selectionLimit: 1,
+    };
+    launchImageLibrary(options, async (response) => {
+      if (response.didCancel) {
+        // User cancelled
+        return;
       }
-    }
+      if (response.errorCode) {
+        Alert.alert('Picker Error', response.errorMessage || 'Unknown error');
+        return;
+      }
+      if (response.assets && response.assets.length > 0) {
+        const asset = response.assets[0];
+        setFile(asset);
+        setUploading(true);
+        setUploadSuccess(false);
+        await uploadFiles({
+          uri: asset.uri || '',
+          type: asset.type || 'application/octet-stream',
+          name: asset.fileName || 'upload',
+        });
+      }
+    });
   };
 
   const uploadFiles = async (file: { uri: string; type: string; name: string }) => {
@@ -79,15 +84,17 @@ const ComplaintCreateScreen = () => {
       uri: file.uri,
       type: file.type || 'application/octet-stream',
       name: file.name || 'upload',
-    });
+    } as any);
     try {
       const json = await ApiService('member/upload', 'POST', formData, logout);
       setUploading(false);
       if (json?.success) {
         setUploadedFileName(json?.filename);
         setUploadSuccess(true);
+        Alert.alert('Success', 'File uploaded successfully!');
       } else {
         setUploadSuccess(false);
+        Alert.alert('Upload failed', json?.message || 'Unknown error');
       }
     } catch (err: any) {
       setUploading(false);
@@ -97,8 +104,8 @@ const ComplaintCreateScreen = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedVendor || !subject.trim() || !message.trim() || !uploadedFileName) {
-      Alert.alert('Error', 'Please fill all fields and upload a file.');
+    if (!selectedVendor || !subject.trim() || !message.trim()) {
+      Alert.alert('Error', 'Please fill all required fields.');
       return;
     }
     setSubmitting(true);
@@ -107,7 +114,7 @@ const ComplaintCreateScreen = () => {
         vendor_id: selectedVendor,
         subject,
         message,
-        attachment: uploadedFileName,
+        attachment: uploadedFileName || '',
       };
       const json = await ApiService('member/create_complaint', 'POST', payload, logout);
       if (json?.result?.status) {
@@ -168,11 +175,11 @@ const ComplaintCreateScreen = () => {
           numberOfLines={4}
         />
         {/* File Attach */}
-        <Text style={styles.label}>Attach File</Text>
+        <Text style={styles.label}>Attach File (Image/Video)</Text>
         <TouchableOpacity style={styles.attachButton} onPress={handleFileAttach} disabled={uploading}>
           <Icon name="attach" size={20} color="#555" />
           <Text style={[styles.attachButtonText, { flex: 1 }]} numberOfLines={1}>
-            {file ? getTruncatedFileName(file.name || '') : 'Attach File'}
+            {file ? getTruncatedFileName(file.fileName || file.uri || '') : 'Attach File'}
           </Text>
           <View style={{ flex: 1, alignItems: 'flex-end', marginRight: 0}}>
               {uploading && <ActivityIndicator size="small" color="#f8d307" style={{ marginLeft: 8 }} />}
@@ -225,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   picker: {
-    height: Platform.OS === 'ios' ? 180 : 48,
+    height: Platform.OS === 'ios' ? 180 : 49,
     width: '100%',
   },
   attachButton: {

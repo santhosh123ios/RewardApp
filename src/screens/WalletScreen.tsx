@@ -182,105 +182,103 @@ export default function WalletScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.safeContainer}>
-        {renderCard()}
-        {/* Tabs */}
-        <View style={styles.tabBar}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {/* List */}
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
-        ) : (
-          <FlatList
-            data={activeTab === 'Transaction' ? transactions : redeems}
-            renderItem={activeTab === 'Transaction' ? renderTransaction : renderRedeem}
-            keyExtractor={item => (activeTab === 'Transaction' ? String(item.transaction_id) : String(item.redeem_id))}
-            contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No data found.</Text>}
-          />
-        )}
-        {/* Floating Action Button for Redeem tab */}
-        {activeTab === 'Redeem' && (
-          <TouchableOpacity style={styles.fab} onPress={() => setRedeemModalVisible(true)}>
-            <Text style={styles.fabText}>+</Text>
+      {renderCard()}
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        {tabs.map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>{tab}</Text>
           </TouchableOpacity>
-        )}
-        {/* Redeem Modal */}
-        <Modal
-          visible={redeemModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setRedeemModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Redeem Request</Text>
-              {redeemLoading ? (
-                <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
-              ) : redeemStatus === 'success' ? (
-                <View style={{ alignItems: 'center', marginVertical: 32 }}>
-                  <Icon name="checkmark-circle" size={64} color="green" style={{ marginBottom: 12 }} />
-                  <Text style={{ color: 'green', fontWeight: 'bold', fontSize: 18 }}>Success!</Text>
-                  <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
-                    Your redeem request was submitted successfully and will be processed soon.
-                  </Text>
-                  
-                </View>
-              ) : redeemStatus === 'failed' ? (
-                <View style={{ alignItems: 'center', marginVertical: 32 }}>
-                  <Icon name="close-circle" size={64} color="red" style={{ marginBottom: 12 }} />
-                  <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Failed!</Text>
-                  <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
-                    Your redeem request could not be processed. Please check your input or try again later.
-                  </Text>
-                  <TouchableOpacity style={styles.modalTryAgainBtn} onPress={() => {
-                    setRedeemStatus(null);
-                  }}>
-                    <Text style={styles.modalTryAgainText}>Try Again</Text>
+        ))}
+      </View>
+      {/* List */}
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
+      ) : (
+        <FlatList
+          data={activeTab === 'Transaction' ? transactions : redeems}
+          renderItem={activeTab === 'Transaction' ? renderTransaction : renderRedeem}
+          keyExtractor={item => (activeTab === 'Transaction' ? String(item.transaction_id) : String(item.redeem_id))}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No data found.</Text>}
+        />
+      )}
+      {/* Floating Action Button for Redeem tab */}
+      {activeTab === 'Redeem' && (
+        <TouchableOpacity style={styles.fab} onPress={() => setRedeemModalVisible(true)}>
+          <Text style={styles.fabText}>+</Text>
+        </TouchableOpacity>
+      )}
+      {/* Redeem Modal */}
+      <Modal
+        visible={redeemModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRedeemModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create Redeem Request</Text>
+            {redeemLoading ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
+            ) : redeemStatus === 'success' ? (
+              <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                <Icon name="checkmark-circle" size={64} color="green" style={{ marginBottom: 12 }} />
+                <Text style={{ color: 'green', fontWeight: 'bold', fontSize: 18 }}>Success!</Text>
+                <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
+                  Your redeem request was submitted successfully and will be processed soon.
+                </Text>
+                
+              </View>
+            ) : redeemStatus === 'failed' ? (
+              <View style={{ alignItems: 'center', marginVertical: 32 }}>
+                <Icon name="close-circle" size={64} color="red" style={{ marginBottom: 12 }} />
+                <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 18 }}>Failed!</Text>
+                <Text style={{ color: '#888', fontSize: 15, marginTop: 8, textAlign: 'center' }}>
+                  Your redeem request could not be processed. Please check your input or try again later.
+                </Text>
+                <TouchableOpacity style={styles.modalTryAgainBtn} onPress={() => {
+                  setRedeemStatus(null);
+                }}>
+                  <Text style={styles.modalTryAgainText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.modalLabel}>Available Points: <Text style={{ fontWeight: 'bold' }}>{availablePoints}</Text></Text>
+                <Text style={styles.modalLabel}>Points</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Enter points"
+                  keyboardType="numeric"
+                  value={redeemPoints}
+                  onChangeText={setRedeemPoints}
+                />
+                <Text style={styles.modalLabel}>Note</Text>
+                <TextInput
+                  style={[styles.modalInput, { height: 60 }]}
+                  placeholder="Enter note"
+                  value={redeemNote}
+                  onChangeText={setRedeemNote}
+                  multiline
+                />
+                <View style={styles.modalBtnRow}>
+                  <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRedeemModalVisible(false)}>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalSubmitBtn} onPress={handleRedeemSubmit}>
+                    <Text style={styles.modalSubmitText}>Submit</Text>
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <>
-                  <Text style={styles.modalLabel}>Available Points: <Text style={{ fontWeight: 'bold' }}>{availablePoints}</Text></Text>
-                  <Text style={styles.modalLabel}>Points</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="Enter points"
-                    keyboardType="numeric"
-                    value={redeemPoints}
-                    onChangeText={setRedeemPoints}
-                  />
-                  <Text style={styles.modalLabel}>Note</Text>
-                  <TextInput
-                    style={[styles.modalInput, { height: 60 }]}
-                    placeholder="Enter note"
-                    value={redeemNote}
-                    onChangeText={setRedeemNote}
-                    multiline
-                  />
-                  <View style={styles.modalBtnRow}>
-                    <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setRedeemModalVisible(false)}>
-                      <Text style={styles.modalCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.modalSubmitBtn} onPress={handleRedeemSubmit}>
-                      <Text style={styles.modalSubmitText}>Submit</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </View>
+              </>
+            )}
           </View>
-        </Modal>
-      </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -289,6 +287,7 @@ const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 16,
   },
   cardContainer: {
     backgroundColor: colors.primary,

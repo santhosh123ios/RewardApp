@@ -1,4 +1,4 @@
-import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from "react-native";
+import { Text, View, FlatList, Image, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Pressable, Platform } from "react-native";
 import colors from "../theme/colors";
 import { useEffect, useState, useContext } from "react";
 import ApiService from "../services/ApiService";
@@ -36,6 +36,7 @@ export default function LeadsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isFocused = useIsFocused();
   const { logout } = useContext(AuthContext);
+  const [pressedId, setPressedId] = useState(null);
 
   // Helper to format date
   function formatDate(dateString: string) {
@@ -83,29 +84,31 @@ export default function LeadsScreen() {
   };
 
   const renderItem = ({ item }: any) => (
-    <TouchableOpacity onPress={() => navigation.navigate('LeadDetails', { lead: item })}>
-      <View style={styles.leadItem}>
-        <Image
-          source={
-            item.vendor_image
-              ? { uri: "https://crmgcc.net/uploads/" + item.vendor_image }
-              : require('../../assets/dummy.jpg')
-          }
-          style={styles.leadImage}
-        />
-        <View style={styles.leadInfo}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.leadTitle}>{item.lead_name}</Text>
-          </View>
-          <Text style={styles.leadDescription}>{item.lead_description}</Text>
-          <Text style={styles.leadDatetime}>{formatDate(item.created_at)}</Text>
-        </View>
+    <TouchableOpacity
+      style={styles.leadItem}
+      activeOpacity={0.5}
+      onPress={() => navigation.navigate('LeadDetails', { lead: item })}
+    >
+      <Image
+        source={
+          item.vendor_image
+            ? { uri: "https://crmgcc.net/uploads/" + item.vendor_image }
+            : require('../../assets/dummy.jpg')
+        }
+        style={styles.leadImage}
+      />
+      <View style={styles.leadInfo}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[styles.statusText, { color: statusMap[item.lead_status]?.color || 'gray' }]}> 
-            {statusMap[item.lead_status]?.text || 'UNKNOWN'}
-          </Text>
-          <View style={[styles.statusDot, { backgroundColor: statusMap[item.lead_status]?.color || 'gray' }]} />
+          <Text style={styles.leadTitle}>{item.lead_name}</Text>
         </View>
+        <Text style={styles.leadDescription}>{item.lead_description}</Text>
+        <Text style={styles.leadDatetime}>{formatDate(item.created_at)}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text style={[styles.statusText, { color: statusMap[item.lead_status]?.color || 'gray' }]}> 
+          {statusMap[item.lead_status]?.text || 'UNKNOWN'}
+        </Text>
+        <View style={[styles.statusDot, { backgroundColor: statusMap[item.lead_status]?.color || 'gray' }]} />
       </View>
     </TouchableOpacity>
   );
