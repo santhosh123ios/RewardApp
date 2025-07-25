@@ -123,7 +123,10 @@ const LeadDetailsScreen = ({ route }) => {
         <View style={{ flex: 1 }}>
           {/* Header */}
           <View style={globalStyles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()}
+              style={{ zIndex: 2 }}
+            >
               <Icon name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={globalStyles.headerTitle}>Lead Details</Text>

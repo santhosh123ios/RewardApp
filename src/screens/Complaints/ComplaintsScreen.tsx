@@ -75,9 +75,12 @@ const ComplaintsScreen = () => {
   };
 
   const renderItem = ({ item }: { item: Complaint }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('ComplaintDetails', { complaint: item })}>
+    <TouchableOpacity 
+    onPress={() => navigation.navigate('ComplaintDetails', { complaint: item })}
+    activeOpacity={0.85}
+    >
       <View style={styles.complaintItem}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',backgroundColor: '#fff', }}>
           <Text
             style={styles.subject}
             numberOfLines={1}
@@ -98,8 +101,11 @@ const ComplaintsScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+      <View style={globalStyles.header}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          style={{ zIndex: 2 }}
+        >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={globalStyles.headerTitle}>Complaints</Text>
@@ -135,8 +141,23 @@ const styles = StyleSheet.create({
     padding: 0,
     },
 
+  vendorItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#fafafa',
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 12,
+      elevation: 1,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      shadowOffset: { width: 0, height: 1 },
+      minHeight: 72,
+  },
+
   complaintItem: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fafafa',
     borderRadius: 10,
     padding: 16,
     marginRight: 16,
@@ -145,21 +166,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 20,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    backgroundColor: '#f5f5f5',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    },
+
     subject: {
         fontSize: 17,
         fontWeight: '700',
