@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import colors from '../theme/colors';
 import ApiService from '../services/ApiService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 
 const windowWidth = Dimensions.get('window').width;
-const tabs = ['Transaction', 'Redeem'];
+// Tabs will be dynamically generated based on expiring points data
 
 export default function WalletScreen() {
   const [activeTab, setActiveTab] = useState('Transaction');
   const [transactions, setTransactions] = useState<any[]>([]);
   const [redeems, setRedeems] = useState<any[]>([]);
+  const [expiringPoints, setExpiringPoints] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [walletLoading, setWalletLoading] = useState(true);
   const [wallet, setWallet] = useState<any>(null);
@@ -24,6 +26,7 @@ export default function WalletScreen() {
 
   useEffect(() => {
     fetchWalletDetails();
+    fetchExpiringPoints();
   }, []);
 
   useEffect(() => {
@@ -43,6 +46,20 @@ export default function WalletScreen() {
     }
   }, [redeemStatus]);
 
+  // Reset to first tab if current tab becomes unavailable
+  useEffect(() => {
+    if (activeTab === 'Expire Soon' && (!expiringPoints || expiringPoints.length === 0)) {
+      setActiveTab('Transaction');
+    }
+  }, [expiringPoints, activeTab]);
+
+  // Refresh expiring points data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchExpiringPoints();
+    }, [])
+  );
+
   const fetchWalletDetails = async () => {
     setWalletLoading(true);
     try {
@@ -58,6 +75,19 @@ export default function WalletScreen() {
     setWalletLoading(false);
   };
 
+  const fetchExpiringPoints = async () => {
+    try {
+      const json = await ApiService('member/calculate_expiring_points', 'GET', null, logout);
+      if (json?.result?.status === 1) {
+        setExpiringPoints(json.result.data);
+      } else {
+        setExpiringPoints([]);
+      }
+    } catch (e) {
+      setExpiringPoints([]);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -68,17 +98,25 @@ export default function WalletScreen() {
         } else {
           setTransactions([]);
         }
-      } else {
+      } else if (activeTab === 'Redeem') {
         const json = await ApiService('member/get_redeem', 'GET', null, logout);
         if (json?.result?.status === 1) {
           setRedeems(json.result.data);
         } else {
           setRedeems([]);
         }
+      } else if (activeTab === 'Expire Soon') {
+        const json = await ApiService('member/calculate_expiring_points', 'GET', null, logout);
+        if (json?.result?.status === 1) {
+          setExpiringPoints(json.result.data);
+        } else {
+          setExpiringPoints([]);
+        }
       }
     } catch (e) {
       setTransactions([]);
       setRedeems([]);
+      setExpiringPoints([]);
     }
     setLoading(false);
   };
@@ -144,6 +182,22 @@ export default function WalletScreen() {
     </View>
   );
 
+  const renderExpiringPoints = ({ item }: { item: any }) => (
+    <View style={styles.listItem}>
+      <View style={styles.itemContent}>
+        <Text style={styles.itemLabel}>Transaction #{item.transaction_id}</Text>
+        <Text style={styles.itemDate}>Expires on: {formatExpiryDate(item.expire_on)}</Text>
+        <Text style={styles.itemVendor}>Days until expiry: {item.daysUntilExpiry}</Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={[styles.itemAmount, { color: colors.green }]}>{item.transaction_cr}</Text>
+        <Text style={[styles.expiryWarning, { color: item.daysUntilExpiry <= 7 ? '#ff6b35' : '#ffa500' }]}>
+          {item.daysUntilExpiry <= 7 ? 'URGENT' : 'EXPIRING SOON'}
+        </Text>
+      </View>
+    </View>
+  );
+
   function formatDate(dateString: string) {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -157,7 +211,22 @@ export default function WalletScreen() {
     return `${day} ${month} ${year} ${hours}:${minutes} ${ampm}`;
   }
 
+  function formatExpiryDate(dateString: string) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  }
+
   const availablePoints = wallet?.available_point?.user_balance || '0';
+
+  // Generate tabs dynamically - only show "Expire Soon" if there are expiring points
+  const tabs = ['Transaction', 'Redeem'];
+  if (expiringPoints && expiringPoints.length > 0) {
+    tabs.push('Expire Soon');
+  }
 
   const handleRedeemSubmit = async () => {
     setRedeemLoading(true);
@@ -188,7 +257,11 @@ export default function WalletScreen() {
         {tabs.map(tab => (
           <TouchableOpacity
             key={tab}
-            style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}
+            style={[
+              styles.tabItem, 
+              activeTab === tab && styles.activeTabItem,
+              { width: expiringPoints && expiringPoints.length > 0 ? (windowWidth - 32) / 3 : (windowWidth - 32) / 2 }
+            ]}
             onPress={() => setActiveTab(tab)}
           >
             <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>{tab}</Text>
@@ -200,9 +273,13 @@ export default function WalletScreen() {
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
       ) : (
         <FlatList
-          data={activeTab === 'Transaction' ? transactions : redeems}
-          renderItem={activeTab === 'Transaction' ? renderTransaction : renderRedeem}
-          keyExtractor={item => (activeTab === 'Transaction' ? String(item.transaction_id) : String(item.redeem_id))}
+          data={activeTab === 'Transaction' ? transactions : activeTab === 'Redeem' ? redeems : expiringPoints}
+          renderItem={activeTab === 'Transaction' ? renderTransaction : activeTab === 'Redeem' ? renderRedeem : renderExpiringPoints}
+          keyExtractor={item => {
+            if (activeTab === 'Transaction') return String(item.transaction_id);
+            if (activeTab === 'Redeem') return String(item.redeem_id);
+            return String(item.transaction_id);
+          }}
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No data found.</Text>}
         />
@@ -346,10 +423,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tabItem: {
-    width: (windowWidth - 32) / 2,
     height: 40,
     paddingVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -406,6 +482,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   redeemStatus: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  expiryWarning: {
     fontSize: 13,
     fontWeight: '600',
     marginTop: 4,

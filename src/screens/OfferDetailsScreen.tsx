@@ -15,10 +15,24 @@ import QRCode from 'react-native-qrcode-svg';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Svg, { Circle } from 'react-native-svg';
 import colors from '../theme/colors';
-
-
+import ApiService from '../services/ApiService';
 
 const windowWidth = Dimensions.get('window').width;
+
+interface OfferCodeResponse {
+  offer_id: number;
+  user_id: number;
+  encrypted_code: string;
+  offer_details: any;
+}
+
+interface ApiResponse {
+  result: {
+    message: string;
+    status: number;
+    data: OfferCodeResponse;
+  };
+}
 
 const OfferDetailsScreen = () => {
   const navigation = useNavigation();
@@ -27,7 +41,35 @@ const OfferDetailsScreen = () => {
   //Clipboard.setString("code");
 
   const [isModalVisible, setModalVisible] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiResponse, setApiResponse] = useState<OfferCodeResponse | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const handleRedeemNow = async () => {
+    setIsLoading(true);
+    setApiError(null);
+    setApiResponse(null);
+    
+    try {
+      const response = await ApiService('member/generate_offer_code', 'POST', {
+        offer_id: offer.id
+      });
+      
+      if (response && response.result && response.result.status === 1) {
+        setApiResponse(response.result.data);
+        setModalVisible(true);
+      } else {
+        setApiError(response?.message || 'Failed to generate offer code');
+        setModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Error generating offer code:', error);
+      setApiError('Network error occurred. Please try again.');
+      setModalVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!offer) return <Text>No offer data</Text>;
 
@@ -75,35 +117,53 @@ const OfferDetailsScreen = () => {
         </ScrollView>
         
         <TouchableOpacity
-        style={styles.redeemButton}
-        onPress={() => setModalVisible(true)}
+        style={[styles.redeemButton, isLoading && styles.redeemButtonDisabled]}
+        onPress={handleRedeemNow}
+        disabled={isLoading}
         >
-            <Text style={styles.redeemButtonText}>Redeem Now</Text>
+            <Text style={styles.redeemButtonText}>
+              {isLoading ? 'Generating...' : 'Redeem Now'}
+            </Text>
         </TouchableOpacity>
 
         <Modal visible={isModalVisible} transparent animationType="slide">
   <View style={styles.modalOverlay}>
     <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Scan this code</Text>
+      {apiError ? (
+        // Error Modal
+        <>
+          <Icon name="close-circle" size={50} color="#ff4444" style={styles.errorIcon} />
+          <Text style={styles.modalTitle}>Error</Text>
+          <Text style={styles.errorMessage}>{apiError}</Text>
+          <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        // Success Modal
+        <>
+          <Text style={styles.modalTitle}>Scan this code</Text>
 
-      {/* ✅ QR Code */}
-      <QRCode value={offer.discount_code || 'DEFAULTCODE'} size={150} />
+          {/* ✅ QR Code */}
+          <QRCode value={apiResponse?.encrypted_code || 'DEFAULTCODE'} size={150} />
 
-      <Text style={styles.discountCodeText}>{offer.discount_code}</Text>
+          <Text style={styles.discountCodeText}>{apiResponse?.encrypted_code}</Text>
 
-      <TouchableOpacity
-        style={styles.copyButton}
-        onPress={() => {
-          Clipboard.setString(offer.discount_code);
-          Alert.alert('Copied', 'Code copied to clipboard');
-        }}
-      >
-        <Text style={styles.copyButtonText}>Copy Code</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.copyButton}
+            onPress={() => {
+              Clipboard.setString(apiResponse?.encrypted_code || '');
+              Alert.alert('Copied', 'Code copied to clipboard');
+            }}
+          >
+            <Text style={styles.copyButtonText}>Copy Code</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => setModalVisible(false)}>
-        <Text style={styles.closeText}>Close</Text>
-      </TouchableOpacity>
+          <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   </View>
 </Modal>
@@ -184,6 +244,9 @@ backgroundColor: '#fff',
     alignItems: 'center',
     marginBottom: 0,
   },
+  redeemButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
   redeemButtonText: {
     color: '#000',
     fontWeight: 'bold',
@@ -233,5 +296,14 @@ copyButtonText: {
 closeText: {
   color: '#888',
   marginTop: 10,
+},
+errorIcon: {
+  marginBottom: 10,
+},
+errorMessage: {
+  fontSize: 16,
+  color: '#ff4444',
+  textAlign: 'center',
+  marginBottom: 20,
 },
 });
