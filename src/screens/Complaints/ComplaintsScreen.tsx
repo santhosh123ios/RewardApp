@@ -80,7 +80,7 @@ const ComplaintsScreen = () => {
     activeOpacity={0.85}
     >
       <View style={styles.complaintItem}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',backgroundColor: '#fff', }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text
             style={styles.subject}
             numberOfLines={1}

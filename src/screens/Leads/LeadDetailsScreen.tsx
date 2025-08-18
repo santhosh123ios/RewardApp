@@ -118,9 +118,9 @@ const LeadDetailsScreen = ({ route }) => {
 
   let lastDate = '';
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={globalStyles.safeContainer}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 , paddingTop: 25}}>
           {/* Header */}
           <View style={globalStyles.header}>
             <TouchableOpacity 

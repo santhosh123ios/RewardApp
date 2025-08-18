@@ -40,6 +40,7 @@ const globalStyles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 24,
     paddingHorizontal: 12,
+    color: colors.label,
     backgroundColor: colors.white,
     marginTop: 12,
   },

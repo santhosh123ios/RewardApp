@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Svg, { Circle } from 'react-native-svg';
+import colors from '../theme/colors';
 
 
 
@@ -191,7 +192,7 @@ backgroundColor: '#fff',
   discount: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#d0021b',
+    color: colors.green,
     marginTop: 4,
   },
 

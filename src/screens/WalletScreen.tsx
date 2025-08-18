@@ -110,13 +110,13 @@ export default function WalletScreen() {
 
   const renderTransaction = ({ item }: { item: any }) => (
     <View style={styles.listItem}>
-      <View>
-        <Text style={styles.itemLabel}>{item.transaction_title}</Text>
+      <View style={styles.itemContent}>
+        <Text style={styles.itemLabel} numberOfLines={2} ellipsizeMode="tail">{item.transaction_title}</Text>
         <Text style={styles.itemDate}>{formatDate(item.transaction_created_at)}</Text>
-        <Text style={styles.itemVendor}>{item.vendor_name}</Text>
+        <Text style={styles.itemVendor} numberOfLines={1} ellipsizeMode="tail">{item.vendor_name}</Text>
       </View>
       <Text style={[styles.itemAmount, { color: item.transaction_cr > 0 ? colors.green : '#d0021b' }]}> 
-        {item.transaction_cr > 0 ? '+' : '-'}{(item.transaction_cr > 0 ? item.transaction_cr : item.transaction_dr).toFixed(2)}
+        {item.transaction_cr > 0 ? '+' : '-'}{(item.transaction_cr > 0 ? item.transaction_cr : item.transaction_dr).toFixed(0)}
       </Text>
     </View>
   );
@@ -381,6 +381,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
+  },
+  itemContent: {
+    flex: 1,
+    marginRight: 12,
   },
   itemLabel: {
     fontSize: 16,

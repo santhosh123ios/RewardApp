@@ -9,6 +9,7 @@ import { Dropdown } from 'react-native-element-dropdown';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthContext } from '../context/AuthContext';
+import globalStyles from '../theme/globalStyles';
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation();
@@ -141,7 +142,7 @@ export default function ProfileEditScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={globalStyles.safeContainer}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
@@ -154,7 +155,7 @@ export default function ProfileEditScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 40 }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
@@ -271,6 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    marginTop: 25,
   },
   headerBtn: {
     width: 40,
@@ -295,14 +297,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: 'bold',
     color: '#222',
-    marginTop: 24,
+    marginTop: 10,
     marginBottom: 12,
   },
   profileImgRow: {
@@ -399,6 +400,7 @@ const styles = StyleSheet.create({
     marginBottom: 20 },
 
   dobRow: { 
+    height: 48,
     flexDirection: 'row', 
     alignItems: 'center', 
     borderWidth: 1, 
@@ -410,8 +412,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between' 
   },
   dobButton: { 
-    paddingVertical: 10, 
-    paddingHorizontal: 16, 
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
     backgroundColor: colors.primary, 
     borderRadius: 6 
   },

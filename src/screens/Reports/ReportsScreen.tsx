@@ -165,7 +165,9 @@ const ReportsScreen = () => {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()}
+          style={{ zIndex: 2 }}
+          >
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={globalStyles.headerTitle}>Reports</Text>

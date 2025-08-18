@@ -1,10 +1,12 @@
 import React, { useState,useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import globalStyles from '../theme/globalStyles';
+import colors from '../theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BallIndicator } from 'react-native-indicators';
 import { AuthContext } from '../context/AuthContext';
+import ApiService from '../services/ApiService';
 
 
 export default function LoginScreen() {
@@ -22,9 +24,19 @@ export default function LoginScreen() {
 
     /////API CALL
     const login = async () => {
+      
         try {
             setLoading(true);
-            const response = await fetch('https://crmgcc.net/api/admin/login', {
+            // Use computer's IP address for Android, localhost for iOS
+            const apiUrl = Platform.OS === 'android' 
+                ? 'http://192.168.8.68:8000/api/admin/login'
+                : 'http://localhost:8000/api/admin/login';
+                
+            console.log('Platform:', Platform.OS);
+            console.log('API URL:', apiUrl);
+            console.log('Attempting login with email:', email);
+                
+            const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -35,8 +47,12 @@ export default function LoginScreen() {
                 password: password,
             }),
             });
-
+            
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (response.ok) {
         
@@ -46,12 +62,12 @@ export default function LoginScreen() {
 
             
             
-            if (user_type === 2 || user_type === 3 )
+            if (user_type === 2 || user_type === 2 ) //3 for vendor
             {
               await AsyncStorage.setItem('auth_token', token);
               await AsyncStorage.setItem('isLoggedIn', 'true');
               setLoggedIn(true);
-              // ///Alert.alert('Success', 'Logged in successfully!'+user_type);
+              //Alert.alert('Success', 'Logged in successfully!'+user_type);
 
             }
             else
@@ -62,8 +78,10 @@ export default function LoginScreen() {
             console.log('Login failed:', data);
             Alert.alert('Login Failed', data.message || 'Invalid credentials');
             }
-        } catch (error) {
-            console.error('Error logging in:', error);
+        } catch (error: any) {
+            console.error('Error logging in:', error.message, error);
+            console.error('Error stack:', error.stack);
+            Alert.alert('Network Error', error.message);
         }
         finally{
             setLoading(false);
@@ -79,6 +97,7 @@ export default function LoginScreen() {
       <TextInput
         style={globalStyles.input}
         placeholder="Enter your email"
+        placeholderTextColor={colors.text}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -88,8 +107,9 @@ export default function LoginScreen() {
       {/* <Text style={globalStyles.label}>Password</Text> */}
       <View style={globalStyles.passwordContainer}>
         <TextInput
-          style={globalStyles.passwordInput}
+          style={[globalStyles.passwordInput, { color: colors.label }]}
           placeholder="Enter your password"
+          placeholderTextColor={colors.text}
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}

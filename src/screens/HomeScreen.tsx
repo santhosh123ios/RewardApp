@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   },
   discount: {
     fontSize: 12,
-    color: '#d0021b',
+    color: colors.green,
     marginTop: 4,
     fontWeight: 'bold',
   },

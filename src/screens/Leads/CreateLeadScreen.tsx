@@ -8,6 +8,7 @@ import ApiService from '../../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary, Asset, ImageLibraryOptions } from 'react-native-image-picker';
 import { AuthContext } from '../../context/AuthContext';
+import colors from '../../theme/colors';
 
 function getTruncatedFileName(name: string, maxLength = 24) {
   if (name.length <= maxLength) return name;
@@ -144,7 +145,10 @@ const CreateLeadScreen = () => {
     return (
         <SafeAreaView style={globalStyles.safeContainer}>
             <View style={globalStyles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <TouchableOpacity 
+                onPress={() => navigation.goBack()}
+                style={{ zIndex: 2 }}
+                >
                     <Icon name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={globalStyles.headerTitle}>Create Lead</Text>
@@ -157,11 +161,15 @@ const CreateLeadScreen = () => {
                     <Picker
                         selectedValue={selectedVendor}
                         onValueChange={(itemValue: string) => setSelectedVendor(itemValue)}
-                        style={styles.picker}
+                        style={{ color: colors.label, width: '100%' }} // <-- Only here!
                     >
                         <Picker.Item label="Select a vendor" value="" />
                         {vendors.map((vendor) => (
-                            <Picker.Item key={vendor.id} label={vendor.name || vendor.vendor_name} value={vendor.id} />
+                            <Picker.Item
+                                key={vendor.id}
+                                label={vendor.name || vendor.vendor_name}
+                                value={vendor.id}
+                            />
                         ))}
                     </Picker>
                 </View>
@@ -246,11 +254,13 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         overflow: 'hidden',
         backgroundColor: '#fff',
+        color: colors.green,
     },
     picker: {
         height: Platform.OS === 'ios' ? 180 : 49,
         width: '100%',
         alignItems: 'center',
+        color: colors.label, // or any color you want, e.g., colors.label
     },
     attachButton: {
         flexDirection: 'row',

@@ -2,7 +2,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const BASE_URL = 'https://crmgcc.net/api/';
+//const BASE_URL = 'http://localhost:8000/api/';
+
+const BASE_URL = Platform.OS === 'android' 
+                ? 'http://192.168.8.68:8000/api/'
+                : 'http://localhost:8000/api/';
 
 // ApiService now accepts an optional onTokenNull callback, called if token is null.
 const ApiService = async (endpoint: string, method: string = 'GET', body: any = null, onTokenNull?: () => void) => {
