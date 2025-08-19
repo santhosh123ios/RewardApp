@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 import colors from '../theme/colors';
 import ApiService from '../services/ApiService';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
+import QRCode from 'react-native-qrcode-svg';
 
 const windowWidth = Dimensions.get('window').width;
 // Tabs will be dynamically generated based on expiring points data
@@ -22,6 +24,9 @@ export default function WalletScreen() {
   const [redeemNote, setRedeemNote] = useState('');
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [redeemStatus, setRedeemStatus] = useState<'success' | 'failed' | null>(null);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [showCardNumber, setShowCardNumber] = useState(false);
   const { logout } = useContext(AuthContext);
 
   useEffect(() => {
@@ -133,7 +138,29 @@ export default function WalletScreen() {
     const balance = wallet.available_point?.user_balance || '0';
     return (
       <View style={styles.cardContainer}>
-        <Text style={styles.cardNumber}>{card.card_no}</Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardNumberContainer}>
+            <Text style={styles.cardNumber}>
+              {showCardNumber ? card.card_no : `•••• •••• •••• ${card.card_no.slice(-4)}`}
+            </Text>
+            <TouchableOpacity 
+              style={styles.eyeIconContainer} 
+              onPress={() => setShowCardNumber(!showCardNumber)}
+            >
+              <Icon 
+                name={showCardNumber ? "eye-off" : "eye"} 
+                size={20} 
+                color="#fff" 
+              />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity 
+            style={styles.qrIconContainer} 
+            onPress={() => setQrModalVisible(true)}
+          >
+            <Icon name="qr-code" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.cardRow}>
           <Text style={styles.cardLabel}>Balance</Text>
           <Text style={styles.cardBalance}>{balance}</Text>
@@ -356,6 +383,62 @@ export default function WalletScreen() {
           </View>
         </View>
       </Modal>
+      {/* QR Code Modal */}
+      <Modal
+        visible={qrModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQrModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.qrModalContent}>
+            <View style={styles.qrModalHeader}>
+              <Text style={styles.qrModalTitle}>Card QR Code</Text>
+              <TouchableOpacity 
+                style={styles.qrCloseButton} 
+                onPress={() => setQrModalVisible(false)}
+              >
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.qrCodeContainer}>
+              <QRCode
+                value={wallet?.card?.card_no || ''}
+                size={200}
+                color="#000"
+                backgroundColor="#fff"
+              />
+            </View>
+            <Text style={styles.qrDescription}>Scan this QR code to access card information</Text>
+            <TouchableOpacity 
+              style={[
+                styles.copyButton, 
+                copyStatus === 'copied' && styles.copyButtonCopied
+              ]} 
+              onPress={() => {
+                const cardNumber = wallet?.card?.card_no || '';
+                if (cardNumber) {
+                  Clipboard.setString(cardNumber);
+                  setCopyStatus('copied');
+                  // Reset status after 2 seconds
+                  setTimeout(() => setCopyStatus('idle'), 2000);
+                }
+              }}
+              disabled={copyStatus === 'copied'}
+            >
+              <Icon 
+                name={copyStatus === 'copied' ? "checkmark-circle" : "copy-outline"} 
+                size={20} 
+                color="#fff" 
+                style={{ marginRight: 8 }} 
+              />
+              <Text style={styles.copyButtonText}>
+                {copyStatus === 'copied' ? 'Copied!' : 'Copy Card Number'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -377,12 +460,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardNumberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
   cardNumber: {
     color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
     letterSpacing: 2,
-    marginBottom: 16,
+    marginRight: 8,
+  },
+  eyeIconContainer: {
+    padding: 4,
+  },
+  qrIconContainer: {
+    padding: 8,
   },
   cardRow: {
     flexDirection: 'row',
@@ -598,5 +699,73 @@ const styles = StyleSheet.create({
     color: colors.label,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  qrModalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    elevation: 8,
+    // Add shadow for iOS
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    // Add a little scale and fade effect
+    transform: [{ scale: 1 }],
+    opacity: 1,
+  },
+  qrModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 18,
+  },
+  qrModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  qrCloseButton: {
+    padding: 8,
+  },
+  qrCodeContainer: {
+    marginBottom: 20,
+  },
+  qrCardNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 10,
+  },
+  qrDescription: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  copyButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  copyButtonCopied: {
+    backgroundColor: colors.green || '#4CAF50',
   },
 });

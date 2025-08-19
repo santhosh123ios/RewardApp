@@ -28,9 +28,13 @@ export default function LoginScreen() {
         try {
             setLoading(true);
             // Use computer's IP address for Android, localhost for iOS
-            const apiUrl = Platform.OS === 'android' 
-                ? 'http://192.168.8.68:8000/api/admin/login'
-                : 'http://localhost:8000/api/admin/login';
+            //Local IP address 192.168.8.68
+            // const apiUrl = Platform.OS === 'android' 
+            //     ? 'http://192.168.8.68:8000/api/admin/login'
+            //     : 'http://localhost:8000/api/admin/login';
+
+            //Live IP address 192.168.8.68
+            const apiUrl = 'https://crmgcc.net/api/admin/login';
                 
             console.log('Platform:', Platform.OS);
             console.log('API URL:', apiUrl);
