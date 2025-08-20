@@ -199,6 +199,8 @@ const LeadDetailsScreen = ({ route }) => {
               value={input}
               onChangeText={setInput}
               multiline
+              underlineColorAndroid="transparent" // Remove Android underline
+              textAlignVertical="center" // Ensures proper text alignment on Android
             />
             <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={sending}>
               <Icon name="send" size={18} color="#fff" />

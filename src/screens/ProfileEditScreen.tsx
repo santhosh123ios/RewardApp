@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import colors from '../theme/colors';
 import ApiService from '../services/ApiService';
 import { Picker } from '@react-native-picker/picker';
@@ -10,9 +11,12 @@ import ImageCropPicker from 'react-native-image-crop-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AuthContext } from '../context/AuthContext';
 import globalStyles from '../theme/globalStyles';
+import { RootStackParamList } from '../types/navigation';
+
+type ProfileEditScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProfileEdit'>;
 
 export default function ProfileEditScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ProfileEditScreenNavigationProp>();
   const { logout } = React.useContext(AuthContext);
   // State for all fields
   const [profileImg, setProfileImg] = React.useState(require('../../assets/dummy.jpg'));
@@ -59,6 +63,11 @@ export default function ProfileEditScreen() {
       }
     } catch (e) {}
     setLoading(false);
+  };
+
+  const handleBackPress = () => {
+    // Since this screen is accessed from tab navigator, always navigate back to VendorDashboard
+    navigation.navigate('VendorDashboard');
   };
 
   const handleSave = async () => {
@@ -145,7 +154,7 @@ export default function ProfileEditScreen() {
     <SafeAreaView style={globalStyles.safeContainer}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.headerBtn}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>

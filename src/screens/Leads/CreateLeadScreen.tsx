@@ -38,7 +38,7 @@ const CreateLeadScreen = () => {
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-                const json = await ApiService('member/vendorlist', 'GET', null, logout);
+                const json = await ApiService('vendor/vendorlist', 'GET', null, logout);
                 if (json?.result?.status === 1) {
                     setVendors(json.result.data);
                     // If vendorParam is provided, pre-select it

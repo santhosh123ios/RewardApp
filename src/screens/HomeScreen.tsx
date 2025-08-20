@@ -10,12 +10,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import colors from '../theme/colors';
+import { createGlobalStyles } from '../theme/globalStyles';
+import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../services/ApiService';
 import { AuthContext } from '../context/AuthContext';
-
+import colors from '../theme/colors';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -40,6 +41,12 @@ type ProductItem = {
 };
 
 export default function HomeScreen() {
+  // const { colors_theme } = useTheme();
+  // const globalStyles = createGlobalStyles(colors_theme);
+
+  const { colors, isDark } = useTheme();
+  const globalStyles = createGlobalStyles(colors);
+  
   const [activeTab, setActiveTab] = useState('Offers');
   const [offers, setOffers] = useState([]);
   const [products, setProducts] = useState([]);

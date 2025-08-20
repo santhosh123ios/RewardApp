@@ -13,6 +13,10 @@ const dummyImg = require('../../assets/dummy.jpg');
 type RootStackParamList = {
   Login: undefined;
   Main: undefined;
+  ProfileEdit: undefined;
+  Vendors: undefined;
+  Reports: undefined;
+  Complaints: undefined;
 };
 
 export default function ProfileScreen() {
@@ -41,13 +45,29 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('auth_token');
-      await AsyncStorage.removeItem('isLoggedIn');
-      setLoggedIn(false); // This will trigger the app to show the Login screen
-    } catch (e) {
-      Alert.alert('Error', 'Failed to logout.');
-    }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('auth_token');
+              await AsyncStorage.removeItem('isLoggedIn');
+              setLoggedIn(false); // This will trigger the app to show the Login screen
+            } catch (e) {
+              Alert.alert('Error', 'Failed to logout.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleProfile = async () => {
