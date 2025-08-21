@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -47,6 +47,10 @@ export default function VendorWalletScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCardNumber, setShowCardNumber] = useState(false);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [topupPoints, setTopupPoints] = useState('');
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [topupStatus, setTopupStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWalletData();
@@ -120,6 +124,52 @@ export default function VendorWalletScreen() {
     setShowCardNumber(!showCardNumber);
   };
 
+  const handleTopup = async () => {
+    if (!topupPoints || parseInt(topupPoints) <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of points');
+      return;
+    }
+
+    try {
+      setTopupLoading(true);
+      setTopupStatus(null);
+      
+      const response = await ApiService('vendor/add_vendor_topup', 'POST', {
+        transaction_point: parseInt(topupPoints)
+      }, logout);
+      
+      if (response?.result?.status === 1) {
+        setTopupStatus('success');
+        // Refresh wallet data after successful topup
+        setTimeout(() => {
+          fetchWalletData();
+          setShowTopupModal(false);
+          setTopupPoints('');
+          setTopupStatus(null);
+        }, 2000);
+      } else {
+        setTopupStatus('error');
+      }
+    } catch (error) {
+      console.error('Topup error:', error);
+      setTopupStatus('error');
+    } finally {
+      setTopupLoading(false);
+    }
+  };
+
+  const openTopupModal = () => {
+    setShowTopupModal(true);
+    setTopupPoints('');
+    setTopupStatus(null);
+  };
+
+  const closeTopupModal = () => {
+    setShowTopupModal(false);
+    setTopupPoints('');
+    setTopupStatus(null);
+  };
+
   const renderTransactionItem = ({ item }: { item: Transaction }) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
@@ -168,7 +218,7 @@ export default function VendorWalletScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Wallet</Text>
-        <TouchableOpacity style={styles.withdrawButton}>
+        <TouchableOpacity style={styles.withdrawButton} onPress={openTopupModal}>
           <Icon name="add-circle-outline" size={20} color="#fff" />
           <Text style={styles.withdrawText}>Topup</Text>
         </TouchableOpacity>
@@ -255,12 +305,12 @@ export default function VendorWalletScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={openTopupModal}>
               <Icon name="add-circle-outline" size={24} color="#f8d307" />
               <Text style={styles.actionText}>Topup</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('AllTransactions' as never)}>
               <Icon name="swap-horizontal-outline" size={24} color="#4caf50" />
               <Text style={styles.actionText}>Transfer</Text>
             </TouchableOpacity>
@@ -276,14 +326,14 @@ export default function VendorWalletScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('AllTransactions' as never)}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
           
           {transactions.length > 0 ? (
             <FlatList
-              data={transactions}
+              data={transactions.slice(0, 5)}
               renderItem={renderTransactionItem}
               keyExtractor={(item) => item.transaction_id.toString()}
               scrollEnabled={false}
@@ -297,6 +347,84 @@ export default function VendorWalletScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Topup Modal */}
+      <Modal
+        visible={showTopupModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeTopupModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Topup Wallet</Text>
+              <TouchableOpacity onPress={closeTopupModal} style={styles.closeButton}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {!topupStatus ? (
+              <>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Enter Points</Text>
+                  <TextInput
+                    style={styles.pointsInput}
+                    value={topupPoints}
+                    onChangeText={setTopupPoints}
+                    placeholder="Enter number of points"
+                    placeholderTextColor="#999"
+                    keyboardType="numeric"
+                    editable={!topupLoading}
+                  />
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.cancelButton]} 
+                    onPress={closeTopupModal}
+                    disabled={topupLoading}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.topupButton]} 
+                    onPress={handleTopup}
+                    disabled={topupLoading || !topupPoints}
+                  >
+                    {topupLoading ? (
+                      <Text style={styles.topupButtonText}>Processing...</Text>
+                    ) : (
+                      <Text style={styles.topupButtonText}>Topup</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <View style={styles.statusContainer}>
+                {topupStatus === 'success' ? (
+                  <>
+                    <Icon name="checkmark-circle" size={64} color="#4caf50" />
+                    <Text style={styles.statusTitle}>Topup Successful!</Text>
+                    <Text style={styles.statusMessage}>
+                      {topupPoints} points have been added to your wallet.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="close-circle" size={64} color="#f44336" />
+                    <Text style={styles.statusTitle}>Topup Failed</Text>
+                    <Text style={styles.statusMessage}>
+                      Please try again later.
+                    </Text>
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -570,6 +698,8 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 15,
     shadowColor: '#000',
+    marginLeft: 5,
+    marginRight: 5,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -650,5 +780,106 @@ const styles = StyleSheet.create({
     paddingBottom: 5,
     borderRadius: 20,
     overflow: 'hidden',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 25,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  inputContainer: {
+    marginBottom: 25,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  pointsInput: {
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 18,
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  topupButton: {
+    backgroundColor: '#f8d307',
+  },
+  topupButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statusContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  statusTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  statusMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

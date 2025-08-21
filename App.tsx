@@ -31,6 +31,7 @@ import PrivacyScreen from './src/screens/PrivacyScreen';
 import SupportScreen from './src/screens/SupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import ThemeSettingsScreen from './src/screens/ThemeSettingsScreen';
+import AllTransactionsScreen from './src/screens/AllTransactionsScreen';
 
 const AppContent: React.FC = () => {
   const Stack = createNativeStackNavigator();
@@ -97,6 +98,8 @@ const AppContent: React.FC = () => {
               {/* Vendor offer and product screens */}
               <Stack.Screen name="OfferDetails" component={OfferDetailsScreen}/>
               <Stack.Screen name="ProductDetails" component={ProductdetailsScreen}/>
+              {/* Vendor wallet screens */}
+              <Stack.Screen name="AllTransactions" component={AllTransactionsScreen}/>
             </>
           ) : (
             <>
