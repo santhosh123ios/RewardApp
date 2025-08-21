@@ -35,6 +35,14 @@ const RedeemScreen = () => {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
+  const [memberPointsResult, setMemberPointsResult] = useState<any>(null);
+  const [showMemberPoints, setShowMemberPoints] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState('');
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [showRedeemPinModal, setShowRedeemPinModal] = useState(false);
+  const [redeemPin, setRedeemPin] = useState('');
+  const [redeemPinError, setRedeemPinError] = useState('');
 
   const handleOfferCheck = async () => {
     if (!cardNumber.trim() && !offerCode.trim()) {
@@ -63,26 +71,36 @@ const RedeemScreen = () => {
     }
   };
 
-  const handlePointCheck = async () => {
-    if (!cardNumber.trim() && !offerCode.trim()) {
-      Alert.alert('Error', 'Please enter either a card number or offer code');
+  const handlePointCheckMember = async () => {
+    if (!cardNumber.trim()) {
+      Alert.alert('Error', 'Please enter a card number');
       return;
     }
-    
+
     setIsLoading(true);
     try {
-      // TODO: Implement point check API call
-      // const response = await ApiService('vendor/check_points', 'POST', {
-      //   card_number: cardNumber.trim(),
-      //   offer_code: offerCode.trim()
-      // });
+      const response = await ApiService('vendor/check_member_points', 'POST', {
+        card_no: cardNumber.trim()
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      Alert.alert('Success', 'Point check completed successfully!');
+      if (response.result && response.result.status === 1) {
+        setMemberPointsResult(response);
+        setShowMemberPoints(true);
+      } else if (response.error && response.error.length > 0) {
+        // Handle error response format
+        setErrorResponse(response);
+        setShowErrorDetails(true);
+      } else {
+        // Fallback error
+        setErrorResponse({
+          status: 0,
+          message: 'Failed to retrieve member points',
+          error: 'Unknown error occurred'
+        });
+        setShowErrorDetails(true);
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to check points. Please try again.');
+      Alert.alert('Error', 'Failed to check member points. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -187,6 +205,196 @@ const RedeemScreen = () => {
     
     // Now call the apply API
     await handleApplyOffer();
+  };
+
+  const handlePointCheck = async () => {
+    if (!cardNumber.trim()) {
+      Alert.alert('Error', 'Please enter a card number');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await ApiService('vendor/check_member_points', 'POST', {
+        card_number: cardNumber.trim()
+      });
+      
+      if (response.result && response.result.status === 1) {
+        setMemberPointsResult(response);
+        setShowMemberPoints(true);
+      } else {
+        // Show error response in popup
+        setErrorResponse(response);
+        setShowErrorDetails(true);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to check member points. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openRedeemModal = () => {
+    setShowRedeemModal(true);
+    setRedeemPoints('');
+  };
+
+  const closeRedeemModal = () => {
+    setShowRedeemModal(false);
+    setRedeemPoints('');
+  };
+
+  const handleRedeemPoints = async () => {
+    if (!redeemPoints.trim()) {
+      Alert.alert('Error', 'Please enter the number of points to redeem');
+      return;
+    }
+
+    if (isNaN(Number(redeemPoints))) {
+      Alert.alert('Error', 'Please enter a valid number');
+      return;
+    }
+
+    const pointsToRedeem = Number(redeemPoints);
+    if (pointsToRedeem <= 0) {
+      Alert.alert('Error', 'Points must be greater than 0');
+      return;
+    }
+
+    const availablePoints = memberPointsResult?.result?.data?.available_points || 0;
+    if (availablePoints < pointsToRedeem) {
+      Alert.alert(
+        'Insufficient Points', 
+        `You only have ${availablePoints} points available. Cannot redeem ${pointsToRedeem} points.`
+      );
+      return;
+    }
+
+    // Show PIN modal instead of direct redemption
+    setShowRedeemModal(false);
+    setShowRedeemPinModal(true);
+  };
+
+  const handleRedeemPinSubmit = async () => {
+    if (redeemPin.length !== 4) {
+      setRedeemPinError('Please enter a 4-digit PIN');
+      return;
+    }
+    
+    setRedeemPinError('');
+    setIsRedeeming(true);
+    
+    try {
+      // Validate and format the request data
+      if (!cardNumber.trim()) {
+        setRedeemPinError('Card number is required');
+        setIsRedeeming(false);
+        return;
+      }
+
+      if (!redeemPoints || isNaN(Number(redeemPoints)) || Number(redeemPoints) <= 0) {
+        setRedeemPinError('Please enter a valid number of points');
+        setIsRedeeming(false);
+        return;
+      }
+
+      // Check if we have member data
+      const memberId = memberPointsResult?.result?.data?.user_id || memberPointsResult?.result?.data?.member_id;
+      if (!memberId) {
+        setRedeemPinError('Member information not available. Please check member points first.');
+        setIsRedeeming(false);
+        return;
+      }
+      
+      console.log('Member ID found:', memberId);
+      console.log('Member data structure:', memberPointsResult?.result?.data);
+
+      const requestData = {
+        member_id: memberId,
+        transaction_point: Number(redeemPoints),
+        transaction_title: redeemPin
+      };
+
+      console.log('Redeem API Request Data:', requestData);
+      console.log('API Endpoint: vendor/redeem_member_points');
+      console.log('Data Types:', {
+        member_id: typeof requestData.member_id,
+        transaction_point: typeof requestData.transaction_point,
+        transaction_title: typeof requestData.transaction_title
+      });
+      
+      // Log the exact JSON that will be sent
+      const requestBody = JSON.stringify(requestData);
+      console.log('Request Body JSON:', requestBody);
+      console.log('Request Body Length:', requestBody.length);
+
+      console.log('Making API call to:', 'vendor/redeem_member_points');
+      console.log('Full URL will be:', 'https://crmgcc.net/api/vendor/redeem_member_points');
+      
+      // Try to make the API call
+      let response;
+      try {
+        // Try the original endpoint first
+        response = await ApiService('vendor/redeem_member_points', 'POST', requestData);
+      } catch (apiError) {
+        console.error('API Service Error with vendor/redeem_member_points:', apiError);
+        
+        // Try alternative endpoint format
+        try {
+          console.log('Trying alternative endpoint: vendor/redeem-member-points');
+          response = await ApiService('vendor/redeem-member-points', 'POST', requestData);
+        } catch (altApiError) {
+          console.error('Alternative endpoint also failed:', altApiError);
+          throw apiError; // Throw the original error
+        }
+      }
+      
+      console.log('Redeem API Response:', response);
+      console.log('Response status check:', response?.result?.status);
+      
+      if (response?.result?.status === 1) {
+        // Show success message in popup
+        setSuccessResponse({
+          result: {
+            message: `Successfully redeemed ${redeemPoints} points!`,
+            data: {
+              redeemed_points: redeemPoints,
+              member_id: memberId,
+              transaction_title: redeemPin
+            }
+          }
+        });
+        setShowSuccessDetails(true);
+        
+        // Close modals and reset state
+        setShowRedeemPinModal(false);
+        setRedeemPin('');
+        setRedeemPoints('');
+        setIsRedeeming(false);
+        setShowMemberPoints(false);
+        setMemberPointsResult(null);
+        setCardNumber('');
+      } else {
+        // Handle error response
+        console.log('API Error Response:', response);
+        if (response?.error && Array.isArray(response.error) && response.error.length > 0) {
+          const errorMessage = response.error[0].message || 'Redemption failed';
+          console.log('Error Message:', errorMessage);
+          setRedeemPinError(errorMessage);
+        } else if (response?.result?.message) {
+          console.log('Result Message:', response.result.message);
+          setRedeemPinError(response.result.message);
+        } else {
+          console.log('Generic error - no specific error message');
+          setRedeemPinError('Redemption failed. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Redemption error:', error);
+      setRedeemPinError('Failed to redeem points. Please try again.');
+    } finally {
+      setIsRedeeming(false);
+    }
   };
 
   const styles = getStyles(colors);
@@ -301,7 +509,9 @@ const RedeemScreen = () => {
         <View style={styles.buttonSection}>
           <TouchableOpacity 
             style={[styles.actionButton, styles.offerCheckButton]} 
-            onPress={handleOfferCheck}
+            //onPress={handleOfferCheck}
+            onPress={!cardNumber.trim()? handleOfferCheck: handlePointCheckMember}
+            
             disabled={isLoading}
           >
             {isLoading ? (
@@ -349,6 +559,15 @@ const RedeemScreen = () => {
             <Icon name="4" size={16} color={colors.primary} />
             <Text style={styles.instructionText}>Click Point Check to see balance</Text>
           </View>
+          
+          {/* Debug Section */}
+          <View style={styles.debugSection}>
+            <Text style={styles.debugTitle}>Debug Info:</Text>
+            <Text style={styles.debugText}>Card Number: {cardNumber || 'Not entered'}</Text>
+            <Text style={styles.debugText}>Member ID: {memberPointsResult?.result?.data?.user_id || memberPointsResult?.result?.data?.member_id || 'Not available'}</Text>
+            <Text style={styles.debugText}>Redeem Points: {redeemPoints || 'Not entered'}</Text>
+            <Text style={styles.debugText}>PIN Length: {redeemPin.length}/4</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -382,41 +601,41 @@ const RedeemScreen = () => {
             
             {offerValidityResult?.result?.data && (
               <ScrollView style={styles.modalBody}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Member Name:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.member_name}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Member Name:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.member_name}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Offer Title:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.offer_title}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Offer Title:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.offer_title}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Description:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.offer_description}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Description:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.offer_description}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Discount Code:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.discount_code}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Discount Code:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.discount_code}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Discount:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.discount}%</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Discount:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.discount}%</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Vendor:</Text>
-                  <Text style={styles.detailValue}>{offerValidityResult.result.data.vendor_name}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Vendor:</Text>
+                  <Text style={styles.modalDetailValue}>{offerValidityResult.result.data.vendor_name}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Start Date:</Text>
-                  <Text style={styles.detailValue}>{new Date(offerValidityResult.result.data.start_date).toLocaleDateString()}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Start Date:</Text>
+                  <Text style={styles.modalDetailValue}>{new Date(offerValidityResult.result.data.start_date).toLocaleDateString()}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>End Date:</Text>
-                  <Text style={styles.detailValue}>{new Date(offerValidityResult.result.data.end_date).toLocaleDateString()}</Text>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>End Date:</Text>
+                  <Text style={styles.modalDetailValue}>{new Date(offerValidityResult.result.data.end_date).toLocaleDateString()}</Text>
                 </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Status:</Text>
-                  <Text style={[styles.detailValue, { color: offerValidityResult.result.data.is_valid ? '#4caf50' : '#f44336' }]}>
+                <View style={styles.modalDetailRow}>
+                  <Text style={styles.modalDetailLabel}>Status:</Text>
+                  <Text style={[styles.modalDetailValue, { color: offerValidityResult.result.data.is_valid ? '#4caf50' : '#f44336' }]}>
                     {offerValidityResult.result.data.is_valid ? 'Valid' : 'Invalid'}
                   </Text>
                 </View>
@@ -479,7 +698,20 @@ const RedeemScreen = () => {
                     </View>
                   )}
                   
-                  {errorResponse.error && (
+                  {errorResponse.error && Array.isArray(errorResponse.error) && errorResponse.error.length > 0 && (
+                    <View style={styles.errorDetailsContainer}>
+                      <View style={styles.errorDetailsHeader}>
+                        <Icon name="bug-outline" size={20} color="#ff6b6b" />
+                        <Text style={styles.errorDetailsTitle}>Error Details</Text>
+                      </View>
+                      {errorResponse.error.map((err: any, index: number) => (
+                        <Text key={index} style={[styles.errorDetailsText, { marginTop: index > 0 ? 5 : 0 }]}>
+                          {err.message}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                  {errorResponse.error && typeof errorResponse.error === 'string' && (
                     <View style={styles.errorDetailsContainer}>
                       <View style={styles.errorDetailsHeader}>
                         <Icon name="bug-outline" size={20} color="#ff6b6b" />
@@ -527,7 +759,7 @@ const RedeemScreen = () => {
                 <View style={styles.successIconContainer}>
                   <Icon name="checkmark-circle" size={48} color="#2ed573" />
                 </View>
-                <Text style={styles.successTitle}>Offer Applied Successfully!</Text>
+                <Text style={styles.successTitle}>Points Redeemed Successfully!</Text>
                 <TouchableOpacity style={styles.successCloseButton} onPress={closeSuccessDetails}>
                   <Icon name="close" size={20} color={colors.text} />
                 </TouchableOpacity>
@@ -538,21 +770,41 @@ const RedeemScreen = () => {
                 <View style={styles.successContent}>
                   <View style={styles.successMessageContainer}>
                     <View style={styles.successMessageHeader}>
-                      <Icon name="information-circle-outline" size={20} color="#2ed573" />
-                      <Text style={styles.successMessageTitle}>Success Details</Text>
+                      <Icon name="gift" size={20} color="#2ed573" />
+                      <Text style={styles.successMessageTitle}>Redemption Successful!</Text>
                     </View>
                     <Text style={styles.successMessageText}>
-                      Your offer has been successfully applied and is now active in your account.
+                      {successResponse.result?.message || 'Points have been successfully redeemed!'}
                     </Text>
                   </View>
                   
-                  {successResponse.result && successResponse.result.message && (
+                  {successResponse.result?.data && (
                     <View style={styles.successDetailsContainer}>
                       <View style={styles.successDetailsHeader}>
                         <Icon name="checkmark-circle-outline" size={20} color="#2ed573" />
-                        <Text style={styles.successDetailsTitle}>Response Message</Text>
+                        <Text style={styles.successDetailsTitle}>Transaction Details</Text>
                       </View>
-                      <Text style={styles.successDetailsText}>{successResponse.result.message}</Text>
+                      
+                      <View style={styles.successDetailRow}>
+                        <Text style={styles.successDetailLabel}>Points Redeemed:</Text>
+                        <Text style={styles.successDetailValue}>
+                          {successResponse.result.data.redeemed_points} pts
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.successDetailRow}>
+                        <Text style={styles.successDetailLabel}>Member ID:</Text>
+                        <Text style={styles.successDetailValue}>
+                          {successResponse.result.data.member_id}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.successDetailRow}>
+                        <Text style={styles.successDetailLabel}>Transaction ID:</Text>
+                        <Text style={styles.successDetailValue}>
+                          {successResponse.result.data.transaction_title}
+                        </Text>
+                      </View>
                     </View>
                   )}
                 </View>
@@ -641,6 +893,309 @@ const RedeemScreen = () => {
             </View>
           </View>
         </Modal>
+
+        {/* Member Points Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showMemberPoints}
+          onRequestClose={() => setShowMemberPoints(false)}
+        >
+          <View style={styles.memberPointsModalOverlay}>
+            <View style={styles.memberPointsModalContent}>
+              {/* Member Points Header */}
+              <View style={styles.memberPointsHeader}>
+                <View style={styles.memberPointsIconContainer}>
+                  <Icon name="card" size={40} color="#f1c40f" />
+                </View>
+                <Text style={styles.memberPointsTitle}>Member Details</Text>
+                <TouchableOpacity style={styles.memberPointsCloseButton} onPress={() => setShowMemberPoints(false)}>
+                  <Icon name="close" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Member Points Content - Scrollable */}
+              {memberPointsResult?.result?.data && (
+                <ScrollView 
+                  style={styles.memberPointsContent}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.memberPointsContentContainer}
+                >
+                  
+                  
+                                      {/* Member Details Section */}
+                    <View style={styles.memberDetailsSection}>
+                      <Text style={styles.sectionTitle}>Member Information</Text>
+                      
+                      {/* Member Name */}
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIconContainer}>
+                          <Icon name="person" size={20} color="#f1c40f" />
+                        </View>
+                        <View style={styles.detailContent}>
+                          <Text style={styles.detailLabel}>Member Name</Text>
+                          <Text style={styles.detailValue}>{memberPointsResult.result.data.member_name || 'N/A'}</Text>
+                        </View>
+                      </View>
+                      
+                      {/* Available Points */}
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIconContainer}>
+                          <Icon name="star" size={20} color="#f1c40f" />
+                        </View>
+                        <View style={styles.detailContent}>
+                          <Text style={styles.detailLabel}>Available Points</Text>
+                          <Text style={styles.detailValue}>{memberPointsResult.result.data.available_points || '0'}</Text>
+                        </View>
+                      </View>
+                      
+                      {/* Member Status */}
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIconContainer}>
+                          <Icon name="person-circle" size={20} color="#f1c40f" />
+                        </View>
+                        <View style={styles.detailContent}>
+                          <Text style={styles.detailLabel}>Member Status</Text>
+                          <Text style={styles.detailValue}>
+                            {memberPointsResult.result.data.member_status === 1 ? 'Active' : 'Inactive'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {/* Member Number */}
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIconContainer}>
+                          <Icon name="call" size={20} color="#f1c40f" />
+                        </View>
+                        <View style={styles.detailContent}>
+                          <Text style={styles.detailLabel}>Member Number</Text>
+                          <Text style={styles.detailValue}>{memberPointsResult.result.data.member_number || 'N/A'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                </ScrollView>
+              )}
+              
+              {/* Action Buttons */}
+              <View style={styles.memberPointsFooter}>
+                <TouchableOpacity 
+                  style={styles.redeemButton} 
+                  onPress={openRedeemModal}
+                >
+                  <Icon name="gift" size={18} color="#fff" />
+                  <Text style={styles.redeemButtonText}>Redeem Points</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Redeem Points Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showRedeemModal}
+          onRequestClose={closeRedeemModal}
+        >
+          <View style={styles.redeemModalOverlay}>
+            <View style={styles.redeemModalContent}>
+              {/* Redeem Header */}
+              <View style={styles.redeemHeader}>
+                {/* <View style={styles.redeemIconContainer}>
+                  <Icon name="gift" size={48} color="#f1c40f" />
+                </View> */}
+                <Text style={styles.redeemTitle}>Redeem Points</Text>
+                <Text style={styles.redeemSubtitle}>Enter the number of points you want to redeem</Text>
+                <TouchableOpacity style={styles.redeemCloseButton} onPress={closeRedeemModal}>
+                  <Icon name="close" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* Redeem Input */}
+              <View style={styles.redeemContent}>
+                <View style={styles.redeemInputContainer}>
+                  {/* <Text style={styles.redeemInputLabel}>Points to Redeem</Text> */}
+                  <TextInput
+                    style={[
+                      styles.redeemInput,
+                      redeemPoints && !isNaN(Number(redeemPoints)) && Number(redeemPoints) > 0 && 
+                      Number(redeemPoints) <= (memberPointsResult?.result?.data?.available_points || 0) 
+                        ? styles.validInput 
+                        : redeemPoints && (isNaN(Number(redeemPoints)) || Number(redeemPoints) <= 0 || 
+                          Number(redeemPoints) > (memberPointsResult?.result?.data?.available_points || 0))
+                        ? styles.invalidInput
+                        : null
+                    ]}
+                    value={redeemPoints}
+                    onChangeText={setRedeemPoints}
+                    placeholder="Enter points"
+                    placeholderTextColor={colors.border}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                </View>
+                
+                {/* Available Points Display */}
+                <View style={styles.availablePointsContainer}>
+                  <View style={styles.availablePointsRow}>
+                    <Icon name="star" size={16} color="#f1c40f" />
+                    <Text style={styles.availablePointsLabel}>Available Points:</Text>
+                    <Text style={styles.availablePointsValue}>
+                      {memberPointsResult?.result?.data?.available_points || '0'} pts
+                    </Text>
+                  </View>
+                </View>
+                
+                {/* Validation Messages */}
+                {redeemPoints && (
+                  <View style={styles.validationContainer}>
+                    {isNaN(Number(redeemPoints)) ? (
+                      <View style={styles.validationError}>
+                        <Icon name="close-circle" size={16} color="#e74c3c" />
+                        <Text style={styles.validationErrorText}>Please enter a valid number</Text>
+                      </View>
+                    ) : Number(redeemPoints) <= 0 ? (
+                      <View style={styles.validationError}>
+                        <Icon name="close-circle" size={16} color="#e74c3c" />
+                        <Text style={styles.validationErrorText}>Points must be greater than 0</Text>
+                      </View>
+                    ) : Number(redeemPoints) > (memberPointsResult?.result?.data?.available_points || 0) ? (
+                      <View style={styles.validationError}>
+                        <Icon name="close-circle" size={16} color="#e74c3c" />
+                        <Text style={styles.validationErrorText}>
+                          Insufficient points. You only have {memberPointsResult?.result?.data?.available_points || '0'} points available.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.validationSuccess}>
+                        <Icon name="checkmark-circle" size={16} color="#2ed573" />
+                        <Text style={styles.validationSuccessText}>
+                          Valid amount: {redeemPoints} points
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                
+                {/* Points Summary */}
+                {redeemPoints && !isNaN(Number(redeemPoints)) && Number(redeemPoints) > 0 && 
+                 Number(redeemPoints) <= (memberPointsResult?.result?.data?.available_points || 0) && (
+                  <View style={styles.pointsSummaryContainer}>
+                    <View style={styles.pointsSummaryRow}>
+                      <Text style={styles.pointsSummaryLabel}>After Redemption:</Text>
+                      <Text style={styles.pointsSummaryValue}>
+                        {(memberPointsResult?.result?.data?.available_points || 0) - Number(redeemPoints)} pts
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+              
+              {/* Redeem Action Buttons */}
+              <View style={styles.redeemFooter}>
+                <TouchableOpacity 
+                  style={styles.redeemCancelButton} 
+                  onPress={closeRedeemModal}
+                >
+                  <Text style={styles.redeemCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[
+                    styles.redeemSubmitButton,
+                    (!redeemPoints.trim() || isNaN(Number(redeemPoints)) || 
+                     Number(redeemPoints) <= 0 || 
+                     Number(redeemPoints) > (memberPointsResult?.result?.data?.available_points || 0))
+                      ? styles.disabledButton
+                      : null
+                  ]} 
+                  onPress={handleRedeemPoints}
+                  disabled={
+                    isRedeeming || 
+                    !redeemPoints.trim() || 
+                    isNaN(Number(redeemPoints)) || 
+                    Number(redeemPoints) <= 0 || 
+                    Number(redeemPoints) > (memberPointsResult?.result?.data?.available_points || 0)
+                  }
+                >
+                  {isRedeeming ? (
+                    <Text style={styles.redeemSubmitText}>Redeeming...</Text>
+                  ) : (
+                    <Text style={styles.redeemSubmitText}>Redeem</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Redeem PIN Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showRedeemPinModal}
+          onRequestClose={() => setShowRedeemPinModal(false)}
+        >
+          <View style={styles.redeemPinModalOverlay}>
+            <View style={styles.redeemPinModalContent}>
+              {/* PIN Header */}
+              <View style={styles.redeemPinHeader}>
+                <View style={styles.redeemPinIconContainer}>
+                  <Icon name="lock-closed" size={48} color="#f1c40f" />
+                </View>
+                <Text style={styles.redeemPinTitle}>Enter PIN</Text>
+                <Text style={styles.redeemPinSubtitle}>Enter 4-digit PIN to confirm redemption</Text>
+                <TouchableOpacity style={styles.redeemPinCloseButton} onPress={() => setShowRedeemPinModal(false)}>
+                  <Icon name="close" size={20} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              
+              {/* PIN Input */}
+              <View style={styles.redeemPinContent}>
+                <View style={styles.redeemPinInputContainer}>
+                  <Text style={styles.redeemPinInputLabel}>4-Digit PIN</Text>
+                  <TextInput
+                    style={styles.redeemPinInput}
+                    value={redeemPin}
+                    onChangeText={setRedeemPin}
+                    placeholder="Enter 4-digit PIN"
+                    placeholderTextColor={colors.border}
+                    keyboardType="numeric"
+                    maxLength={4}
+                    secureTextEntry={false}
+                  />
+                  {redeemPinError ? (
+                    <Text style={styles.redeemPinErrorText}>{redeemPinError}</Text>
+                  ) : null}
+                </View>
+                
+                <Text style={styles.redeemPinHint}>
+                  Points to redeem: {redeemPoints} points
+                </Text>
+              </View>
+              
+              {/* PIN Action Buttons */}
+              <View style={styles.redeemPinFooter}>
+                <TouchableOpacity 
+                  style={styles.redeemPinCancelButton} 
+                  onPress={() => setShowRedeemPinModal(false)}
+                >
+                  <Text style={styles.redeemPinCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.redeemPinSubmitButton} 
+                  onPress={handleRedeemPinSubmit}
+                  disabled={redeemPin.length !== 4 || isRedeeming}
+                >
+                  {isRedeeming ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.redeemPinSubmitText}>Confirm</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+                </Modal>
       </SafeAreaView>
     );
 };
@@ -843,27 +1398,27 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 20,
     maxHeight: 400,
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: colors.text,
-    flex: 2,
-    textAlign: 'right',
-  },
+      modalDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 15,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+      modalDetailLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      flex: 1,
+    },
+    modalDetailValue: {
+      fontSize: 14,
+      color: colors.text,
+      flex: 2,
+      textAlign: 'right',
+    },
   modalFooter: {
     flexDirection: 'row',
     padding: 20,
@@ -1192,6 +1747,26 @@ const getStyles = (colors: any) => StyleSheet.create({
       color: colors.text,
       lineHeight: 20,
     },
+    successDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+      paddingVertical: 4,
+    },
+    successDetailLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      flex: 1,
+    },
+    successDetailValue: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+      textAlign: 'right',
+    },
     successStatusContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1398,6 +1973,608 @@ const getStyles = (colors: any) => StyleSheet.create({
       color: '#fff',
       fontSize: 16,
       fontWeight: '600',
+    },
+    
+    // Member Points Modal Styles
+    memberPointsModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    memberPointsModalContent: {
+      backgroundColor: colors.background,
+      borderRadius: 20,
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '80%',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 15,
+    },
+    memberPointsHeader: {
+      alignItems: 'center',
+      paddingTop: 30,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      position: 'relative',
+    },
+    memberPointsIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    memberPointsTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 5,
+    },
+    memberPointsCloseButton: {
+      position: 'absolute',
+      top: 15,
+      right: 15,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    memberPointsContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
+    memberPointsContentContainer: {
+      paddingBottom: 20,
+    },
+    pointsSummaryCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 25,
+      borderWidth: 1,
+      borderColor: 'rgba(241, 196, 15, 0.2)',
+    },
+    pointsIconContainer: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: 'rgba(241, 196, 15, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    pointsInfoContainer: {
+      flex: 1,
+    },
+    pointsLabel: {
+      fontSize: 14,
+      color: '#f1c40f',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 4,
+    },
+    pointsValue: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: '#f1c40f',
+    },
+    statusBadge: {
+      backgroundColor: '#f1c40f',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      minWidth: 80,
+      alignItems: 'center',
+    },
+    statusText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    
+    // Member Details Styles
+    memberDetailsSection: {
+      backgroundColor: 'rgba(241, 196, 15, 0.05)',
+      borderRadius: 16,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(241, 196, 15, 0.1)',
+    },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: 'rgba(241, 196, 15, 0.05)',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(241, 196, 15, 0.1)',
+    },
+    detailIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    detailContent: {
+      flex: 1,
+    },
+    detailLabel: {
+      fontSize: 12,
+      color: '#f1c40f',
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    detailValue: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '500',
+      lineHeight: 20,
+    },
+    memberPointsFooter: {
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      paddingTop: 10,
+    },
+    redeemButton: {
+      backgroundColor: '#f1c40f',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#f1c40f',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    redeemButtonText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+      marginLeft: 8,
+    },
+    
+    // Redeem Points Modal Styles
+    redeemModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    redeemModalContent: {
+      backgroundColor: colors.background,
+      borderRadius: 20,
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '80%',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 15,
+    },
+    redeemHeader: {
+      alignItems: 'center',
+      paddingTop: 30,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      position: 'relative',
+    },
+    redeemIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    redeemTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    redeemSubtitle: {
+      fontSize: 16,
+      color: colors.textSecondary || colors.text,
+      textAlign: 'center',
+      opacity: 0.8,
+      lineHeight: 22,
+    },
+    redeemCloseButton: {
+      position: 'absolute',
+      top: 15,
+      right: 15,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    redeemContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      alignItems: 'center',
+    },
+    redeemInputContainer: {
+      width: '100%',
+      marginBottom: 20,
+    },
+    redeemInputLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    redeemInput: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      paddingVertical: 15,
+      paddingHorizontal: 20,
+      textAlign: 'center',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    redeemHint: {
+      color: colors.textSecondary || colors.text,
+      fontSize: 14,
+      opacity: 0.7,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    redeemFooter: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      paddingTop: 10,
+      gap: 12,
+    },
+    redeemCancelButton: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    redeemCancelText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    redeemSubmitButton: {
+      flex: 1,
+      backgroundColor: '#f1c40f',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#f1c40f',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    redeemSubmitText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // Enhanced Redeem Modal Styles
+    validInput: {
+      borderColor: '#2ed573',
+      backgroundColor: 'rgba(46, 213, 115, 0.05)',
+    },
+    invalidInput: {
+      borderColor: '#e74c3c',
+      backgroundColor: 'rgba(231, 76, 60, 0.05)',
+    },
+    availablePointsContainer: {
+      marginTop: 15,
+      marginBottom: 15,
+      padding: 12,
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(241, 196, 15, 0.3)',
+    },
+    availablePointsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    availablePointsLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+      flex: 1,
+    },
+    availablePointsValue: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#f1c40f',
+    },
+    validationContainer: {
+      marginTop: 10,
+      marginBottom: 15,
+    },
+    validationError: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 8,
+      backgroundColor: 'rgba(231, 76, 60, 0.1)',
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(231, 76, 60, 0.3)',
+    },
+    validationErrorText: {
+      fontSize: 12,
+      color: '#e74c3c',
+      fontWeight: '500',
+      flex: 1,
+    },
+    validationSuccess: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 8,
+      backgroundColor: 'rgba(46, 213, 115, 0.1)',
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(46, 213, 115, 0.3)',
+    },
+    validationSuccessText: {
+      fontSize: 12,
+      color: '#2ed573',
+      fontWeight: '500',
+      flex: 1,
+    },
+    pointsSummaryContainer: {
+      marginTop: 10,
+      padding: 12,
+      backgroundColor: 'rgba(52, 152, 219, 0.1)',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(52, 152, 219, 0.3)',
+    },
+    pointsSummaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    pointsSummaryLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    pointsSummaryValue: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#3498db',
+    },
+    
+    // Redeem PIN Modal Styles
+    redeemPinModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    redeemPinModalContent: {
+      backgroundColor: colors.background,
+      borderRadius: 20,
+      width: '100%',
+      maxWidth: 400,
+      maxHeight: '80%',
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 10,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 15,
+    },
+    redeemPinHeader: {
+      alignItems: 'center',
+      paddingTop: 30,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      position: 'relative',
+    },
+    redeemPinIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: 'rgba(241, 196, 15, 0.1)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    redeemPinTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    redeemPinSubtitle: {
+      fontSize: 16,
+      color: colors.textSecondary || colors.text,
+      textAlign: 'center',
+      opacity: 0.8,
+      lineHeight: 22,
+    },
+    redeemPinCloseButton: {
+      position: 'absolute',
+      top: 15,
+      right: 15,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    redeemPinContent: {
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      alignItems: 'center',
+    },
+    redeemPinInputContainer: {
+      width: '100%',
+      marginBottom: 20,
+    },
+    redeemPinInputLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    redeemPinInput: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      paddingVertical: 15,
+      paddingHorizontal: 20,
+      textAlign: 'center',
+      borderWidth: 2,
+      borderColor: 'rgba(241, 196, 15, 0.3)',
+      letterSpacing: 8,
+    },
+    redeemPinErrorText: {
+      color: '#e74c3c',
+      fontSize: 12,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    redeemPinHint: {
+      color: colors.textSecondary || colors.text,
+      fontSize: 14,
+      opacity: 0.7,
+      textAlign: 'center',
+      lineHeight: 20,
+      fontStyle: 'italic',
+    },
+    redeemPinFooter: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+      paddingTop: 10,
+      gap: 12,
+    },
+    redeemPinCancelButton: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    redeemPinCancelText: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    redeemPinSubmitButton: {
+      flex: 1,
+      backgroundColor: '#f1c40f',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#f1c40f',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    redeemPinSubmitText: {
+      color: '#fff',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    // Debug Styles
+    debugSection: {
+      marginTop: 20,
+      padding: 15,
+      backgroundColor: 'rgba(255, 193, 7, 0.1)',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 193, 7, 0.3)',
+    },
+    debugTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#f1c40f',
+      marginBottom: 10,
+      textTransform: 'uppercase',
+    },
+    debugText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginBottom: 5,
+      fontFamily: 'monospace',
     },
   });
   
