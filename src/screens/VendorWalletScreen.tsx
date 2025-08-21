@@ -6,12 +6,47 @@ import { useNavigation } from '@react-navigation/native';
 import globalStyles from '../theme/globalStyles';
 import colors from '../theme/colors';
 import { AuthContext } from '../context/AuthContext';
+import ApiService from '../services/ApiService';
+
+interface WalletData {
+  card: {
+    card_id: number;
+    card_no: string;
+    card_status: number;
+    user_id: number;
+    card_type: string;
+  };
+  balance_point: string;
+}
+
+interface Transaction {
+  transaction_id: number;
+  transaction_type: number;
+  transaction_cr: number;
+  transaction_dr: number;
+  transaction_title: string;
+  transaction_created_at: string;
+  user_id: number;
+  from_id: number;
+  to_id: number;
+  card_id: number;
+  card_no: string;
+  from_name: string;
+  from_image: string;
+  from_type: number;
+  to_name: string;
+  to_email: string;
+  to_image: string;
+  to_type: number;
+}
 
 export default function VendorWalletScreen() {
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
-  const [balance, setBalance] = useState(1250.00);
-  const [transactions, setTransactions] = useState([]);
+  const [walletData, setWalletData] = useState<WalletData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCardNumber, setShowCardNumber] = useState(false);
 
   useEffect(() => {
     fetchWalletData();
@@ -19,119 +54,123 @@ export default function VendorWalletScreen() {
 
   const fetchWalletData = async () => {
     try {
-      // TODO: Replace with actual API call to fetch vendor's wallet data
-      // const response = await ApiService('vendor/wallet', 'GET', null, logout);
+      setLoading(true);
       
-      // Mock data for now
-      const mockTransactions = [
-        {
-          id: 1,
-          type: 'credit',
-          amount: 500.00,
-          description: 'Lead commission - John Doe',
-          date: '2024-01-15',
-          status: 'completed',
-        },
-        {
-          id: 2,
-          type: 'credit',
-          amount: 750.00,
-          description: 'Lead commission - Jane Smith',
-          date: '2024-01-10',
-          status: 'completed',
-        },
-        {
-          id: 3,
-          type: 'debit',
-          amount: 200.00,
-          description: 'Withdrawal to bank account',
-          date: '2024-01-08',
-          status: 'completed',
-        },
-        {
-          id: 4,
-          type: 'credit',
-          amount: 300.00,
-          description: 'Lead commission - Mike Johnson',
-          date: '2024-01-05',
-          status: 'pending',
-        },
-        {
-          id: 5,
-          type: 'credit',
-          amount: 450.00,
-          description: 'Lead commission - Sarah Wilson',
-          date: '2024-01-03',
-          status: 'completed',
-        },
-      ];
+      // Fetch wallet data
+      const walletResponse = await ApiService('vendor/get_wallet', 'GET', null, logout);
+      if (walletResponse?.result?.status === 1) {
+        setWalletData(walletResponse.result.data);
+      }
       
-      setTransactions(mockTransactions);
+      // Fetch transactions
+      const transactionsResponse = await ApiService('vendor/get_transaction', 'GET', null, logout);
+      if (transactionsResponse?.result?.status === 1) {
+        setTransactions(transactionsResponse.result.data);
+      }
     } catch (error) {
       console.error('Error fetching wallet data:', error);
-      setTransactions([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTransactionIcon = (type: string) => {
-    return type === 'credit' ? 'arrow-down-circle' : 'arrow-up-circle';
+  const getTransactionIcon = (transaction: Transaction) => {
+    // transaction_type: 1 = credit (topup), 2 = debit (transfer)
+    return transaction.transaction_type === 1 ? 'arrow-down-circle' : 'arrow-up-circle';
   };
 
-  const getTransactionColor = (type: string) => {
-    return type === 'credit' ? '#4caf50' : '#f44336';
+  const getTransactionColor = (transaction: Transaction) => {
+    return transaction.transaction_type === 1 ? '#4caf50' : '#f44336';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '#4caf50';
-      case 'pending':
-        return '#ff9800';
-      case 'failed':
-        return '#f44336';
-      default:
-        return '#666';
+  const getTransactionAmount = (transaction: Transaction) => {
+    if (transaction.transaction_type === 1) {
+      return transaction.transaction_cr;
+    } else {
+      return transaction.transaction_dr;
     }
   };
 
-  const renderTransactionItem = ({ item }: { item: any }) => (
+  const getTransactionType = (transaction: Transaction) => {
+    return transaction.transaction_type === 1 ? 'credit' : 'debit';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const calculateTotalEarned = () => {
+    return transactions
+      .filter(t => t.transaction_type === 1)
+      .reduce((sum, t) => sum + t.transaction_cr, 0);
+  };
+
+  const calculateTotalWithdrawn = () => {
+    return transactions
+      .filter(t => t.transaction_type === 2)
+      .reduce((sum, t) => sum + t.transaction_dr, 0);
+  };
+
+  const toggleCardNumber = () => {
+    setShowCardNumber(!showCardNumber);
+  };
+
+  const renderTransactionItem = ({ item }: { item: Transaction }) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionHeader}>
         <View style={styles.transactionIcon}>
           <Icon 
-            name={getTransactionIcon(item.type)} 
+            name={getTransactionIcon(item)} 
             size={24} 
-            color={getTransactionColor(item.type)} 
+            color={getTransactionColor(item)} 
           />
         </View>
         
         <View style={styles.transactionInfo}>
-          <Text style={styles.transactionDescription}>{item.description}</Text>
-          <Text style={styles.transactionDate}>{item.date}</Text>
+          <Text style={styles.transactionDescription}>{item.transaction_title}</Text>
+          <Text style={styles.transactionDate}>{formatDate(item.transaction_created_at)}</Text>
+          <Text style={styles.transactionFrom}>
+            {item.transaction_type === 1 ? `From: ${item.from_name}` : `To: ${item.to_name}`}
+          </Text>
         </View>
         
         <View style={styles.transactionAmount}>
           <Text style={[
             styles.amountText, 
-            { color: getTransactionColor(item.type) }
+            { color: getTransactionColor(item) }
           ]}>
-            {item.type === 'credit' ? '+' : '-'}${item.amount.toFixed(2)}
+            {getTransactionType(item) === 'credit' ? '+' : '-'}{getTransactionAmount(item)} pts
           </Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>{item.status}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: '#4caf50' }]}>
+            <Text style={styles.statusText}>completed</Text>
           </View>
         </View>
       </View>
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading wallet data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Wallet</Text>
         <TouchableOpacity style={styles.withdrawButton}>
-          <Icon name="card-outline" size={20} color="#fff" />
-          <Text style={styles.withdrawText}>Withdraw</Text>
+          <Icon name="add-circle-outline" size={20} color="#fff" />
+          <Text style={styles.withdrawText}>Topup</Text>
         </TouchableOpacity>
       </View>
 
@@ -142,28 +181,72 @@ export default function VendorWalletScreen() {
             <Text style={styles.balanceLabel}>Available Balance</Text>
             <Icon name="wallet-outline" size={32} color="#f8d307" />
           </View>
-          <Text style={styles.balanceAmount}>${balance.toFixed(2)}</Text>
-          <Text style={styles.balanceSubtext}>USD</Text>
+          <Text style={styles.balanceAmount}>{walletData?.balance_point || 0} pts</Text>
+          
+          
+          {/* Credit Card Design */}
+          {walletData?.card && (
+            <View style={styles.creditCard}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardLogo}>
+                  <Icon name="card" size={24} color="#fff" />
+                </View>
+                <Text style={styles.statusValue}>
+                    {walletData.card.card_status === 1 ? 'Active' : 'Inactive'}
+                </Text>
+              </View>
+              
+              <View style={styles.cardNumberContainer}>
+                <View style={styles.cardNumberHeader}>
+                  <Text style={styles.cardNumber}>
+                    {showCardNumber 
+                      ? walletData.card.card_no.replace(/(\d{4})(?=\d)/g, '$1 ')
+                      : `**** **** **** ${walletData.card.card_no.slice(-4)}`
+                    }
+                  </Text>
+                  <TouchableOpacity onPress={toggleCardNumber} style={styles.eyeButton}>
+                    <Icon 
+                      name={showCardNumber ? "eye-off" : "eye"} 
+                      size={20} 
+                      color="rgba(255, 255, 255, 0.8)" 
+                    />
+                  </TouchableOpacity>
+                </View>
+                
+              </View>
+              
+              <View style={styles.cardFooter}>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardInfoLabel}>CARD TYPE</Text>
+                  <Text style={styles.cardInfoValue}>Silver</Text>
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardInfoLabel}>EXPIRES</Text>
+                  <Text style={styles.cardInfoValue}>12/25</Text>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Icon name="trending-up" size={24} color="#4caf50" />
-            <Text style={styles.statNumber}>$2,450</Text>
+            <Text style={styles.statNumber}>{calculateTotalEarned()} pts</Text>
             <Text style={styles.statLabel}>Total Earned</Text>
           </View>
           
           <View style={styles.statCard}>
             <Icon name="trending-down" size={24} color="#f44336" />
-            <Text style={styles.statNumber}>$1,200</Text>
-            <Text style={styles.statLabel}>Total Withdrawn</Text>
+            <Text style={styles.statNumber}>{calculateTotalWithdrawn()} pts</Text>
+            <Text style={styles.statLabel}>Total Transferred</Text>
           </View>
           
           <View style={styles.statCard}>
             <Icon name="time-outline" size={24} color="#ff9800" />
-            <Text style={styles.statNumber}>$300</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statNumber}>{transactions.length}</Text>
+            <Text style={styles.statLabel}>Transactions</Text>
           </View>
         </View>
 
@@ -173,8 +256,8 @@ export default function VendorWalletScreen() {
           
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.actionButton}>
-              <Icon name="card-outline" size={24} color="#f8d307" />
-              <Text style={styles.actionText}>Withdraw</Text>
+              <Icon name="add-circle-outline" size={24} color="#f8d307" />
+              <Text style={styles.actionText}>Topup</Text>
             </TouchableOpacity>
             
             <TouchableOpacity style={styles.actionButton}>
@@ -198,13 +281,20 @@ export default function VendorWalletScreen() {
             </TouchableOpacity>
           </View>
           
-          <FlatList
-            data={transactions}
-            renderItem={renderTransactionItem}
-            keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
+          {transactions.length > 0 ? (
+            <FlatList
+              data={transactions}
+              renderItem={renderTransactionItem}
+              keyExtractor={(item) => item.transaction_id.toString()}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View style={styles.noTransactions}>
+              <Icon name="document-outline" size={48} color="#ccc" />
+              <Text style={styles.noTransactionsText}>No transactions yet</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -215,6 +305,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#666',
   },
   header: {
     backgroundColor: '#fff',
@@ -267,9 +366,9 @@ const styles = StyleSheet.create({
   balanceCard: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 25,
-    alignItems: 'center',
-    marginBottom: 30,
+    padding: 16,
+    alignItems: 'flex-start',
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -284,7 +383,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 0,
   },
   balanceLabel: {
     fontSize: 16,
@@ -292,7 +391,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   balanceAmount: {
-    fontSize: 48,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 5,
@@ -300,6 +399,91 @@ const styles = StyleSheet.create({
   balanceSubtext: {
     fontSize: 14,
     color: '#999',
+    marginBottom: 15,
+  },
+  cardInfo: {
+    alignItems: 'flex-start',
+    paddingTop: 5,
+  },
+  cardType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#f8d307',
+    marginBottom: 5,
+  },
+  cardNumber: {
+    fontSize: 18,
+    color: '#fff',
+    fontFamily: 'monospace',
+    fontWeight: '600',
+    letterSpacing: 2,
+  },
+  // New Credit Card Styles
+  creditCard: {
+    backgroundColor: '#667eea',
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 10,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  cardLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardNumberContainer: {
+    marginBottom: 5,
+  },
+  cardNumberHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 10,
+  },
+  eyeButton: {
+    padding: 5,
+  },
+  cardNumberLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 0,
+  },
+  cardInfoLabel: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardInfoValue: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -347,6 +531,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 0,
   },
   viewAllText: {
     color: '#f8d307',
@@ -355,6 +540,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 10,
   },
   actionButton: {
     backgroundColor: '#fff',
@@ -417,6 +603,11 @@ const styles = StyleSheet.create({
   transactionDate: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 3,
+  },
+  transactionFrom: {
+    fontSize: 12,
+    color: '#999',
   },
   transactionAmount: {
     alignItems: 'flex-end',
@@ -436,5 +627,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textTransform: 'capitalize',
+  },
+  noTransactions: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+  },
+  noTransactionsText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#999',
+  },
+  statusValue: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingTop: 5,
+    paddingBottom: 5,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
 });
