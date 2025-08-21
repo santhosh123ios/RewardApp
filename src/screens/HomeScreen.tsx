@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createGlobalStyles } from '../theme/globalStyles';
@@ -16,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../services/ApiService';
 import { AuthContext } from '../context/AuthContext';
-import colors from '../theme/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -41,10 +42,7 @@ type ProductItem = {
 };
 
 export default function HomeScreen() {
-  // const { colors_theme } = useTheme();
-  // const globalStyles = createGlobalStyles(colors_theme);
-
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const globalStyles = createGlobalStyles(colors);
   
   const [activeTab, setActiveTab] = useState('Offers');
@@ -57,123 +55,90 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
   
+  // ScrollView ref for tab navigation
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (activeTab === 'Offers') {
       fetchOffers();
+      // Scroll to first tab
+      scrollViewRef.current?.scrollTo({ x: 0, animated: true });
     } else if (activeTab === 'Products') {
       fetchProducts();
+      // Scroll to second tab
+      scrollViewRef.current?.scrollTo({ x: windowWidth, animated: true });
     }
   }, [activeTab]);
 
-  // Refresh API data when switching tabs
-  useEffect(() => {
-    if (activeTab === 'Offers') {
-      fetchOffers();
-    } else if (activeTab === 'Products') {
-      fetchProducts();
+  const fetchOffers = async () => {
+    setLoading(true);
+    try {
+      const json = await ApiService('member/get_all_offers', 'GET', null, logout);
+
+      if (json?.result?.status === 1) {
+        setOffers(json.result.data);
+      } else {
+        console.warn('Failed to fetch offers');
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [activeTab]);
+  };
 
-// const fetchOffers = async () => {
-//   try {
-//     const token = await AsyncStorage.getItem('auth_token'); // 👈 or your token key
-//     if (!token) {
-//       console.warn('No token found');
-//       return;
-//     }
+  const fetchProducts = async () => {
+    setLoadingProd(true);
+    try {
+      const json = await ApiService('member/get_all_product', 'GET', null, logout);
 
-//     const response = await fetch('https://crmgcc.net/api/member/get_all_offers', {
-//       method: 'GET',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': `Bearer ${token}`, // ✅ Pass token here
-//       },
-//     });
-
-//     const json = await response.json();
-
-//     if (json.result && json.result.status === 1) {
-//       setOffers(json.result.data);
-//     } else {
-//       console.warn('Failed to fetch offers');
-//     }
-//   } catch (error) {
-//     console.error('Fetch error:', error);
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-const fetchOffers = async () => {
-  setLoading(true);
-  try {
-    const json = await ApiService('member/get_all_offers', 'GET', null, logout);
-
-    if (json?.result?.status === 1) {
-      setOffers(json.result.data);
-    } else {
-      console.warn('Failed to fetch offers');
+      if (json?.result?.status === 1) {
+        setProducts(json.result.data);
+      } else {
+        console.warn('Failed to fetch offers');
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+    } finally {
+      setLoadingProd(false);
     }
-  } catch (error) {
-    console.error('Fetch error:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-const fetchProducts = async () => {
-  setLoadingProd(true);
-  try {
-    const json = await ApiService('member/get_all_product', 'GET', null, logout);
+  const renderCard = ({ item }: { item: OfferItem }) => (
+    <TouchableOpacity
+      onPress={() => (navigation as any).navigate('OfferDetails', { offer: item })}
+      style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}
+      activeOpacity={0.8}
+    >
+      <Image
+        source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
+        style={styles.image}
+      />
+      <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+      <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>{item.description}</Text>
+      <Text style={[styles.discount, { color: colors.green }]}>Discount: {item.discount}%</Text>
+    </TouchableOpacity>
+  );
 
-    if (json?.result?.status === 1) {
-      setProducts(json.result.data);
-    } else {
-      console.warn('Failed to fetch offers');
-    }
-  } catch (error) {
-    console.error('Fetch error:', error);
-  } finally {
-    setLoadingProd(false);
-  }
-};
-
-const renderCard = ({ item }: { item: OfferItem }) => (
-  <TouchableOpacity
-    onPress={() => navigation.navigate('OfferDetails', { offer: item })}
-    style={styles.card}
-    activeOpacity={0.8}
-  >
-    <Image
-      source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
-      style={styles.image}
-    />
-    <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-    <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-    <Text style={styles.discount}>Discount: {item.discount}%</Text>
-  </TouchableOpacity>
-);
-
-const renderCardProduct = ({ item }: { item: ProductItem }) => (
-  <TouchableOpacity
-    onPress={() => navigation.navigate('ProductDetails', { product: item })}
-    style={styles.card}
-    activeOpacity={0.8}
-  >
-    <Image
-      source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
-      style={styles.image}
-    />
-    <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-    <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
-    <View style={styles.priceView}>
-      <Text style={styles.priceLable}>Price: </Text>
-      <Text style={styles.offerPrice}>{item.offer_price}</Text>
-      <Text style={styles.price}>{item.price}</Text>
-    </View>
-  </TouchableOpacity>
-);
+  const renderCardProduct = ({ item }: { item: ProductItem }) => (
+    <TouchableOpacity
+      onPress={() => (navigation as any).navigate('ProductDetails', { product: item })}
+      style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}
+      activeOpacity={0.8}
+    >
+      <Image
+        source={{ uri: `https://crmgcc.net/uploads/${item.image}` }}
+        style={styles.image}
+      />
+      <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+      <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>{item.description}</Text>
+      <View style={styles.priceView}>
+        <Text style={[styles.priceLable, { color: colors.label }]}>Price: </Text>
+        <Text style={[styles.offerPrice, { color: colors.green }]}>{item.offer_price}</Text>
+        <Text style={[styles.price, { color: colors.textSecondary }]}>{item.price}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   // Pull-to-refresh handler
   const onRefresh = async () => {
@@ -186,79 +151,163 @@ const renderCardProduct = ({ item }: { item: ProductItem }) => (
     setRefreshing(false);
   };
 
+  // Handle scroll to change tabs
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const page = Math.round(offsetX / windowWidth);
+    
+    if (page === 0 && activeTab !== 'Offers') {
+      setActiveTab('Offers');
+    } else if (page === 1 && activeTab !== 'Products') {
+      setActiveTab('Products');
+    }
+  };
+
+  // Handle tab press
+  const handleTabPress = (tab: string) => {
+    setActiveTab(tab);
+    const tabIndex = tabs.indexOf(tab);
+    scrollViewRef.current?.scrollTo({ x: tabIndex * windowWidth, animated: true });
+  };
+
   return (
-    <SafeAreaView style={styles.safeContainer}>
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
+      {/* Header with Theme Toggle */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Reward Club</Text>
+        <TouchableOpacity 
+          style={[styles.themeToggle, { backgroundColor: colors.primary }]} 
+          onPress={toggleTheme}
+        >
+          <Icon 
+            name={isDark ? 'sunny' : 'moon'} 
+            size={20} 
+            color={colors.text} 
+          />
+        </TouchableOpacity>
+      </View>
+
       {/* Tab selector */}
-      <View style={styles.TabView}>
-        <View style={styles.tabBar}>
-            {tabs.map(tab => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabItem,
-                  activeTab === tab && styles.activeTabItem,
-                ]}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={activeTab === tab ? styles.activeTabText : styles.tabText}>
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      <View style={[styles.TabView, { backgroundColor: colors.surface }]}>
+        <View style={[styles.tabBar, { backgroundColor: colors.surfaceVariant }]}>
+          {tabs.map((tab, index) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tabItem,
+                activeTab === tab && [styles.activeTabItem, { backgroundColor: colors.primary }],
+              ]}
+              onPress={() => handleTabPress(tab)}
+            >
+              <Text style={[
+                activeTab === tab ? styles.activeTabText : styles.tabText,
+                { color: activeTab === tab ? colors.slelectedLabel : colors.label }
+              ]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
+
+      </View>
+
+      {/* Swipeable Content */}
+      <ScrollView
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        style={styles.swipeContainer}
+      >
+        {/* Offers Page */}
+        <View style={styles.pageContainer}>
+          {/* Loader */}
+          {loading && !refreshing && (
+            <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+          
+          {/* Offers Grid */}
+          <FlatList
+            data={offers}
+            renderItem={renderCard}
+            keyExtractor={item => item.id.toString()}
+            numColumns={2}
+            contentContainerStyle={[styles.grid, { backgroundColor: colors.background }]}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            style={{ backgroundColor: colors.background }}
+            scrollEnabled={false} // Disable vertical scroll in horizontal scroll view
+          />
         </View>
 
-      {/* Loader below the tab bar */}
-      {((activeTab === 'Offers' && loading && !refreshing) || (activeTab === 'Products' && loadingProd && !refreshing)) && (
-        <View style={{ justifyContent: 'center', alignItems: 'center', minHeight: 60 }}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        {/* Products Page */}
+        <View style={styles.pageContainer}>
+          {/* Loader */}
+          {loadingProd && !refreshing && (
+            <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+          
+          {/* Products Grid */}
+          <FlatList
+            data={products}
+            renderItem={renderCardProduct}
+            keyExtractor={item => item.id.toString()}
+            numColumns={2}
+            contentContainerStyle={[styles.grid, { backgroundColor: colors.background }]}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            style={{ backgroundColor: colors.background }}
+            scrollEnabled={false} // Disable vertical scroll in horizontal scroll view
+          />
         </View>
-      )}
-
-      {/* Offers Grid */}
-      {activeTab === 'Offers' && (
-        <FlatList
-          data={offers}
-          renderItem={renderCard}
-          keyExtractor={item => item.id.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.grid}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      )}
-
-      {activeTab === 'Products' && (
-        <FlatList
-          data={products}
-          renderItem={renderCardProduct}
-          keyExtractor={item => item.id.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.grid}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-
 const styles = StyleSheet.create({
   safeContainer: {
-  backgroundColor: colors.white,
-  height: windowHeight-50
-},
+    height: windowHeight - 50,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  themeToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.white,
-
   },
   TabView: {
     height: 60,
-    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   tabBar: {
     width: 250,
@@ -267,10 +316,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
-
   tabItem: {
     width: 125,
     height: 40,
@@ -281,27 +328,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTabItem: {
-    backgroundColor: colors.primary,
+    // backgroundColor will be set dynamically
   },
   tabText: {
-    color: colors.label,
     fontWeight: '600',
   },
   activeTabText: {
-    color: colors.slelectedLabel,
     fontWeight: '700',
+  },
+  swipeContainer: {
+    flex: 1,
+  },
+  pageContainer: {
+    width: windowWidth,
+    flex: 1,
+  },
+  loaderContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 60,
   },
   grid: {
     padding: 10,
   },
   card: {
     width: windowWidth / 2 - 20,
-    backgroundColor: '#fff',
     borderRadius: 10,
     margin: 5,
     padding: 10,
     elevation: 2,
-    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
@@ -315,46 +370,35 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#222',
   },
   description: {
     fontSize: 12,
-    color: '#666',
   },
   discount: {
     fontSize: 12,
-    color: colors.green,
     marginTop: 4,
     fontWeight: 'bold',
   },
-  priceView:
-  {
+  priceView: {
     flexDirection: 'row',
   },
-  priceLable:
-  {
+  priceLable: {
     fontSize: 12,
-    color: colors.label,
     marginTop: 4,
     fontWeight: 'bold',
   },
-  offerPrice:
-  {
+  offerPrice: {
     fontSize: 12,
-    color: colors.green,
     marginTop: 4,
     fontWeight: 'bold',
   },
-  price:
-  {
+  price: {
     fontSize: 12,
-    color: colors.text,
     marginTop: 4,
     fontWeight: 'bold',
     marginLeft: 5,
     textDecorationLine: 'line-through',
   },
-
   placeholder: {
     flex: 1,
     justifyContent: 'center',
