@@ -30,7 +30,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose, scanningFor }) =
   };
 
   const handleDemoScan = () => {
-    const demoData = scanningFor === 'card' ? '1234567890123456' : 'DEMO123';
+    const demoData = scanningFor === 'card' ? '5523955395591429' : 'MTo0NQ==.462f5554';
     console.log('QR Scanner: Simulating scan for', scanningFor, 'with data:', demoData);
     onScan(demoData);
   };
