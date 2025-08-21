@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -19,16 +19,19 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import ApiService from '../services/ApiService';
 import { AuthContext } from '../context/AuthContext';
-import { useContext } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 const VendorLeadDetailsScreen = ({ route }) => {
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
   const { lead } = route.params;
   const [loading, setLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(lead.lead_status);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [statusUpdateResult, setStatusUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const styles = getStyles(colors);
   
   // Message section states
   const [messages, setMessages] = useState([]);
@@ -303,7 +306,7 @@ const VendorLeadDetailsScreen = ({ route }) => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Icon name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Lead Details</Text>
         <View style={styles.placeholder} />
@@ -332,32 +335,32 @@ const VendorLeadDetailsScreen = ({ route }) => {
             
             <View style={styles.leadInfo}>
               <View style={styles.infoRow}>
-                <Icon name="person-outline" size={20} color="#666" />
+                <Icon name="person-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.infoLabel}>Member:</Text>
                 <Text style={styles.infoValue}>{lead.member_name}</Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Icon name="mail-outline" size={20} color="#666" />
+                <Icon name="mail-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.infoLabel}>Email:</Text>
                 <Text style={styles.infoValue}>{lead.email}</Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Icon name="calendar-outline" size={20} color="#666" />
+                <Icon name="calendar-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.infoLabel}>Created:</Text>
                 <Text style={styles.infoValue}>{formatDate(lead.created_at)}</Text>
               </View>
               
               <View style={styles.infoRow}>
-                <Icon name="document-text-outline" size={20} color="#666" />
+                <Icon name="document-text-outline" size={20} color={colors.textSecondary} />
                 <Text style={styles.infoLabel}>Description:</Text>
               </View>
               <Text style={styles.descriptionText}>{lead.description}</Text>
               
               {lead.lead_file && (
                 <View style={styles.infoRow}>
-                  <Icon name="document" size={20} color="#666" />
+                  <Icon name="document" size={20} color={colors.textSecondary} />
                   <Text style={styles.infoLabel}>Attachment:</Text>
                   <Text style={styles.infoValue}>Available</Text>
                 </View>
@@ -392,12 +395,12 @@ const VendorLeadDetailsScreen = ({ route }) => {
             >
               {messageLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#f8d307" />
+                  <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={styles.loadingText}>Loading messages...</Text>
                 </View>
               ) : messages.length === 0 ? (
                 <View style={styles.noMessagesContainer}>
-                  <Icon name="chatbubble-outline" size={48} color="#ccc" />
+                  <Icon name="chatbubble-outline" size={48} color={colors.textDisabled} />
                   <Text style={styles.noMessagesText}>No messages yet</Text>
                   <Text style={styles.noMessagesSubtext}>Start the conversation with the member</Text>
                 </View>
@@ -484,14 +487,14 @@ const VendorLeadDetailsScreen = ({ route }) => {
                 setShowStatusDropdown(false);
                 setStatusUpdateResult(null); // Clear result when closing
               }}>
-                <Icon name="close" size={20} color="#666" />
+                <Icon name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
             {/* Show loader or result */}
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#f8d307" />
+                <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.loadingText}>Updating status...</Text>
               </View>
             ) : statusUpdateResult ? (
@@ -552,7 +555,7 @@ const VendorLeadDetailsScreen = ({ route }) => {
             <View style={styles.pointEntryHeader}>
               <Text style={styles.pointEntryTitle}>Add Points & Complete Lead</Text>
               <TouchableOpacity onPress={() => setShowPointEntry(false)}>
-                <Icon name="close" size={20} color="#666" />
+                <Icon name="close" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             
@@ -561,7 +564,7 @@ const VendorLeadDetailsScreen = ({ route }) => {
               <View style={styles.balanceSection}>
                 <Text style={styles.balanceLabel}>Your Available Balance:</Text>
                 {balanceLoading ? (
-                  <ActivityIndicator size="small" color="#f8d307" />
+                  <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Text style={styles.balanceAmount}>{vendorBalance} Points</Text>
                 )}
@@ -628,7 +631,7 @@ const VendorLeadDetailsScreen = ({ route }) => {
 
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#f8d307" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Updating status...</Text>
         </View>
       )}
@@ -636,19 +639,19 @@ const VendorLeadDetailsScreen = ({ route }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.divider,
   },
   backButton: {
     padding: 5,
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   placeholder: {
     width: 34,
@@ -671,11 +674,11 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Add padding to prevent content from being hidden behind input row
   },
   leadCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
@@ -690,7 +693,7 @@ const styles = StyleSheet.create({
   leadTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     flex: 1,
     marginRight: 15,
   },
@@ -715,27 +718,27 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     minWidth: 80,
   },
   infoValue: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     flex: 1,
   },
   descriptionText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     lineHeight: 24,
     marginLeft: 30,
     marginTop: 5,
   },
   statusSection: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
@@ -744,12 +747,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 5,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 20,
   },
   statusGrid: {
@@ -764,13 +767,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 25,
     borderWidth: 2,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     minWidth: 120,
     justifyContent: 'center',
   },
   statusOptionActive: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 3,
   },
   statusDot: {
@@ -782,10 +785,10 @@ const styles = StyleSheet.create({
   statusOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: colors.textSecondary,
   },
   statusOptionTextActive: {
-    color: '#333',
+    color: colors.text,
     fontWeight: '700',
   },
   actionSection: {
@@ -799,10 +802,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     paddingVertical: 15,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
@@ -812,7 +815,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -820,7 +823,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -846,17 +849,17 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dropdownContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     width: '80%',
     maxWidth: 300,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -869,12 +872,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.divider,
   },
   dropdownTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   dropdownOption: {
     flexDirection: 'row',
@@ -885,11 +888,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dropdownOptionActive: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.surfaceVariant,
   },
   dropdownOptionText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.text,
     marginLeft: 12,
     flex: 1,
   },
@@ -917,7 +920,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     // shadowOffset: { width: 0, height: 2 },
     // shadowOpacity: 0.1,
     // shadowRadius: 3.84,
@@ -939,16 +942,16 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   otherMessage: {
-    backgroundColor: '#eee',
+    backgroundColor: colors.surfaceVariant,
     alignSelf: 'flex-start',
   },
   messageText: { 
     fontSize: 16, 
-    color: '#222' 
+    color: colors.text
   },
   messageMeta: { 
     fontSize: 12, 
-    color: '#888', 
+    color: colors.textTertiary, 
     marginTop: 4 
   },
   inputRow: {
@@ -960,10 +963,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
+    borderTopColor: colors.divider,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
@@ -972,15 +975,16 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.surfaceVariant,
     marginRight: 8,
     maxHeight: 100,
     minHeight: 40,
+    color: colors.text,
     // Android-specific fixes
     underlineColorAndroid: 'transparent',
     textAlignVertical: 'center',
@@ -988,9 +992,9 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: colors.border,
         borderRadius: 24,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: colors.surfaceVariant,
         paddingHorizontal: 16,
         paddingVertical: 10,
         // Override Android default styles
@@ -1015,7 +1019,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.textDisabled,
   },
   dateSeparator: {
     alignItems: 'center',
@@ -1025,7 +1029,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   dateSeparatorText: {
-    color: '#555',
+    color: colors.textSecondary,
     fontSize: 13,
     paddingHorizontal: 12,
     paddingVertical: 2,
@@ -1038,25 +1042,25 @@ const styles = StyleSheet.create({
   },
   noMessagesText: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 10,
     fontWeight: '600',
   },
   noMessagesSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textTertiary,
     marginTop: 5,
     textAlign: 'center',
   },
   
   // Point Entry Modal Styles
   pointEntryContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     width: '90%',
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -1069,12 +1073,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.divider,
   },
   pointEntryTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   pointEntryContent: {
     gap: 20,
@@ -1082,18 +1086,18 @@ const styles = StyleSheet.create({
   balanceSection: {
     alignItems: 'center',
     paddingVertical: 15,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 10,
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 5,
   },
   balanceAmount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4caf50',
+    color: colors.success,
   },
   pointInputSection: {
     gap: 10,
@@ -1101,17 +1105,18 @@ const styles = StyleSheet.create({
   pointInputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   pointInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.surfaceVariant,
     textAlign: 'center',
+    color: colors.text,
     ...Platform.select({
       android: {
         elevation: 0,
@@ -1125,14 +1130,14 @@ const styles = StyleSheet.create({
   balanceCheckSection: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surfaceVariant,
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#e9ecef',
+    borderLeftColor: colors.border,
   },
   balanceCheckLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   balanceCheckAmount: {
@@ -1140,20 +1145,20 @@ const styles = StyleSheet.create({
   },
   insufficientWarning: {
     fontSize: 12,
-    color: '#f44336',
+    color: colors.error,
     textAlign: 'center',
     marginTop: 5,
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#4caf50',
+    backgroundColor: colors.success,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 10,
   },
   submitButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.textDisabled,
   },
   submitButtonText: {
     color: '#fff',
@@ -1162,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 12,
-    color: '#f44336',
+    color: colors.error,
     textAlign: 'center',
     marginTop: 8,
     fontStyle: 'italic',

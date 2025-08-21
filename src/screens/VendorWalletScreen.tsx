@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import globalStyles from '../theme/globalStyles';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import ApiService from '../services/ApiService';
 
@@ -43,6 +43,7 @@ interface Transaction {
 export default function VendorWalletScreen() {
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,8 @@ export default function VendorWalletScreen() {
   const [topupPoints, setTopupPoints] = useState('');
   const [topupLoading, setTopupLoading] = useState(false);
   const [topupStatus, setTopupStatus] = useState<string | null>(null);
+
+  const styles = getStyles(colors);
 
   useEffect(() => {
     fetchWalletData();
@@ -218,9 +221,9 @@ export default function VendorWalletScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Wallet</Text>
-        <TouchableOpacity style={styles.withdrawButton} onPress={openTopupModal}>
-          <Icon name="add-circle-outline" size={20} color="#fff" />
-          <Text style={styles.withdrawText}>Topup</Text>
+        <TouchableOpacity style={styles.withdrawButton} onPress={() => navigation.navigate('Redeem' as never)}>
+          <Icon name="gift-outline" size={20} color="#fff" />
+          <Text style={styles.withdrawText}>Redeem</Text>
         </TouchableOpacity>
       </View>
 
@@ -229,7 +232,10 @@ export default function VendorWalletScreen() {
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
             <Text style={styles.balanceLabel}>Available Balance</Text>
-            <Icon name="wallet-outline" size={32} color="#f8d307" />
+            <TouchableOpacity style={styles.withdrawButton} onPress={openTopupModal}>
+              <Icon name="add-circle-outline" size={20} color="#fff" />
+              <Text style={styles.withdrawText}>Topup</Text>
+            </TouchableOpacity>
           </View>
           <Text style={styles.balanceAmount}>{walletData?.balance_point || 0} pts</Text>
           
@@ -429,10 +435,10 @@ export default function VendorWalletScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -441,10 +447,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    color: colors.textSecondary,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -452,7 +458,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -464,16 +470,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   withdrawButton: {
-    backgroundColor: '#f8d307',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -483,7 +489,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   withdrawText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -492,12 +498,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   balanceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     alignItems: 'flex-start',
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -515,18 +521,18 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   balanceAmount: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 5,
   },
   balanceSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textTertiary,
     marginBottom: 15,
   },
   cardInfo: {
@@ -536,7 +542,7 @@ const styles = StyleSheet.create({
   cardType: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#f8d307',
+    color: colors.primary,
     marginBottom: 5,
   },
   cardNumber: {
@@ -553,7 +559,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 10,
     width: '100%',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 8,
@@ -619,13 +625,13 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   statCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 5,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -637,13 +643,13 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginTop: 10,
     marginBottom: 5,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   section: {
@@ -658,11 +664,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginBottom: 0,
   },
   viewAllText: {
-    color: '#f8d307',
+    color: colors.primary,
     fontWeight: '600',
   },
   actionButtons: {
@@ -671,13 +677,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   actionButton: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     padding: 20,
     borderRadius: 15,
     flex: 1,
     marginHorizontal: 5,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -690,14 +696,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
   },
   transactionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     marginLeft: 5,
     marginRight: 5,
     shadowOffset: {
@@ -716,7 +722,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -727,17 +733,17 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 5,
   },
   transactionDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 3,
   },
   transactionFrom: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textTertiary,
   },
   transactionAmount: {
     alignItems: 'flex-end',
@@ -761,13 +767,13 @@ const styles = StyleSheet.create({
   noTransactions: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
   },
   noTransactionsText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#999',
+    color: colors.textTertiary,
   },
   statusValue: {
     fontSize: 14,
@@ -784,17 +790,17 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 25,
     width: '85%',
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 10,
@@ -812,7 +818,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   closeButton: {
     padding: 5,
@@ -823,17 +829,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 10,
   },
   pointsInput: {
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 15,
     fontSize: 18,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: colors.text,
+    backgroundColor: colors.surfaceVariant,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -848,20 +854,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   cancelButtonText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '600',
   },
   topupButton: {
-    backgroundColor: '#f8d307',
+    backgroundColor: colors.primary,
   },
   topupButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -872,13 +878,13 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginTop: 15,
     marginBottom: 10,
   },
   statusMessage: {
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
   },

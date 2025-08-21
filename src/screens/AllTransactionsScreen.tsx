@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import ApiService from '../services/ApiService';
 
@@ -31,9 +31,12 @@ interface Transaction {
 export default function AllTransactionsScreen() {
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const styles = getStyles(colors);
 
   useEffect(() => {
     fetchTransactions();
@@ -139,7 +142,7 @@ export default function AllTransactionsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Transactions</Text>
         <View style={styles.placeholder} />
@@ -180,7 +183,7 @@ export default function AllTransactionsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.noTransactions}>
-            <Icon name="document-outline" size={48} color="#ccc" />
+            <Icon name="document-outline" size={48} color={colors.textDisabled} />
             <Text style={styles.noTransactionsText}>No transactions found</Text>
           </View>
         }
@@ -189,10 +192,10 @@ export default function AllTransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -201,10 +204,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    color: colors.textSecondary,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -212,7 +215,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -227,7 +230,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   placeholder: {
     width: 34,
@@ -239,13 +242,13 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   statCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 5,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -257,13 +260,13 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
     marginTop: 10,
     marginBottom: 5,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   transactionsList: {
@@ -271,11 +274,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   transactionCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -292,7 +295,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.surfaceVariant,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -303,22 +306,22 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: colors.text,
     marginBottom: 5,
   },
   transactionDate: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 3,
   },
   transactionFrom: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textTertiary,
     marginBottom: 3,
   },
   transactionId: {
     fontSize: 11,
-    color: '#ccc',
+    color: colors.textDisabled,
     fontFamily: 'monospace',
   },
   transactionAmount: {
@@ -343,12 +346,12 @@ const styles = StyleSheet.create({
   noTransactions: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
   },
   noTransactionsText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#999',
+    color: colors.textTertiary,
   },
 });

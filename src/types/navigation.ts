@@ -37,6 +37,7 @@ export type RootStackParamList = {
   Wallet: undefined;
   VendorWallet: undefined;
   AllTransactions: undefined;
+  Redeem: undefined;
   
   // Lead management screens
   Leads: undefined;

@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import globalStyles from '../theme/globalStyles';
-import colors from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import ApiService from '../services/ApiService';
 
@@ -22,9 +22,12 @@ type VendorLeadsScreenNavigationProp = BottomTabNavigationProp<VendorTabParamLis
 export default function VendorLeadsScreen() {
   const navigation = useNavigation<VendorLeadsScreenNavigationProp>();
   const { logout } = useContext(AuthContext);
+  const { colors, isDark } = useTheme();
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, active, processing, pending
+
+  const styles = getStyles(colors);
 
   const handleStackNavigation = (screenName: string, params?: any) => {
     // For stack navigation, we need to access the parent navigator
@@ -148,22 +151,22 @@ export default function VendorLeadsScreen() {
       
       <View style={styles.leadInfo}>
         <View style={styles.infoRow}>
-          <Icon name="person-outline" size={16} color="#666" />
+          <Icon name="person-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.infoText}>{item.member_name}</Text>
         </View>
         
         <View style={styles.infoRow}>
-          <Icon name="mail-outline" size={16} color="#666" />
+          <Icon name="mail-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.infoText}>{item.email}</Text>
         </View>
         
         <View style={styles.infoRow}>
-          <Icon name="calendar-outline" size={16} color="#666" />
+          <Icon name="calendar-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.infoText}>{item.created_at}</Text>
         </View>
         
         <View style={styles.infoRow}>
-          <Icon name="document-text-outline" size={16} color="#666" />
+          <Icon name="document-text-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.infoText} numberOfLines={2}>
             {item.description}
           </Text>
@@ -172,7 +175,7 @@ export default function VendorLeadsScreen() {
       
       <View style={styles.leadActions}>
         <TouchableOpacity style={styles.actionButton}>
-          <Icon name="call" size={16} color="#4caf50" />
+          <Icon name="call" size={16} color={colors.success} />
           <Text style={styles.actionText}>Call</Text>
         </TouchableOpacity>
         
@@ -180,13 +183,13 @@ export default function VendorLeadsScreen() {
           style={styles.actionButton}
           onPress={() => handleStackNavigation('VendorLeadDetails', { lead: item })}
         >
-          <Icon name="eye" size={16} color="#f8d307" />
+          <Icon name="eye" size={16} color={colors.primary} />
           <Text style={styles.actionText}>View</Text>
         </TouchableOpacity>
         
         {item.lead_file && (
           <TouchableOpacity style={styles.actionButton}>
-            <Icon name="document" size={16} color="#4caf50" />
+            <Icon name="document" size={16} color={colors.success} />
             <Text style={styles.actionText}>File</Text>
           </TouchableOpacity>
         )}
@@ -209,7 +212,7 @@ export default function VendorLeadsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#f8d307" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading leads...</Text>
         </View>
       </SafeAreaView>
@@ -239,7 +242,7 @@ export default function VendorLeadsScreen() {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Icon name="people-outline" size={64} color="#ccc" />
+            <Icon name="people-outline" size={64} color={colors.textDisabled} />
             <Text style={styles.emptyText}>No leads found</Text>
             <Text style={styles.emptySubtext}>Create your first lead to get started</Text>
           </View>
@@ -249,13 +252,13 @@ export default function VendorLeadsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -263,7 +266,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -275,16 +278,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   addButton: {
-    backgroundColor: '#f8d307',
+    backgroundColor: colors.primary,
     width: 50,
     height: 50,
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -302,9 +305,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     marginRight: 10,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -314,24 +317,24 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   filterButtonActive: {
-    backgroundColor: '#f8d307',
+    backgroundColor: colors.primary,
   },
   filterText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontWeight: '600',
   },
   filterTextActive: {
-    color: '#fff',
+    color: colors.white,
   },
   listContainer: {
     padding: 20,
   },
   leadCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    shadowColor: '#000',
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -349,7 +352,7 @@ const styles = StyleSheet.create({
   leadName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.text,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -371,14 +374,14 @@ const styles = StyleSheet.create({
   },
   infoText: {
     marginLeft: 10,
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   leadActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.divider,
     paddingTop: 15,
   },
   actionButton: {
@@ -389,7 +392,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     marginLeft: 5,
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -410,13 +413,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 20,
     marginBottom: 10,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textTertiary,
     textAlign: 'center',
   },
 });

@@ -32,6 +32,7 @@ import SupportScreen from './src/screens/SupportScreen';
 import AboutScreen from './src/screens/AboutScreen';
 import ThemeSettingsScreen from './src/screens/ThemeSettingsScreen';
 import AllTransactionsScreen from './src/screens/AllTransactionsScreen';
+import RedeemScreen from './src/screens/RedeemScreen';
 
 const AppContent: React.FC = () => {
   const Stack = createNativeStackNavigator();
@@ -100,6 +101,7 @@ const AppContent: React.FC = () => {
               <Stack.Screen name="ProductDetails" component={ProductdetailsScreen}/>
               {/* Vendor wallet screens */}
               <Stack.Screen name="AllTransactions" component={AllTransactionsScreen}/>
+              <Stack.Screen name="Redeem" component={RedeemScreen}/>
             </>
           ) : (
             <>
